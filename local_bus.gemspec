@@ -8,7 +8,7 @@ Gem::Specification.new do |s|
   s.authors = ["Nate Hopkins (hopsoft)"]
   s.email = ["natehop@gmail.com"]
   s.homepage = "https://github.com/hopsoft/local_bus"
-  s.summary = "A thread-safe pub/sub system for Ruby that enables decoupled intra-process communication"
+  s.summary = "A thread-safe pub/sub system for decoupled intra-process communication"
   s.description = s.summary
   s.license = "MIT"
 
