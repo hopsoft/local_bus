@@ -1,0 +1,16 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "bundler/setup"
+require "local_bus"
+
+# You can add fixtures and/or initialization code here to make experimenting
+# with your gem easier. You can also use a different console, if you like.
+
+require "amazing_print"
+require "pry-byebug"
+require "pry-doc"
+
+AmazingPrint.defaults = {indent: 2, index: false, ruby19_syntax: true}
+AmazingPrint.pry!
+Pry.start

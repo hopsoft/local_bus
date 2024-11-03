@@ -1,0 +1,25 @@
+#!/usr/bin/env ruby
+
+# frozen_string_literal: true
+
+frozen_string = "# frozen_string_literal: true"
+
+paths = Dir.glob(File.join(File.expand_path("../{app,config,lib,test}", __dir__), "**", "*.{rb}"))
+
+paths.each do |path|
+  lines = File.readlines(path)
+
+  frozen = lines.any? { _1.start_with? frozen_string }
+
+  case frozen
+  in true then next
+  in false
+    lines
+      .insert(0, "#{frozen_string}\n")
+      .insert(1, "\n")
+  end
+
+  File.write(path, lines.join)
+end
+
+system "bundle exec standardrb --fix ."
