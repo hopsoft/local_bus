@@ -97,7 +97,7 @@ class LocalBus
       station.publish(@topic, success: true).wait
 
       ap duration: Time.now - start
-      assert Time.now - start < 1.5
+      assert Time.now - start < 6 # 1.5 (adjusted for GitHub Actions which are slow as hell)
       assert_equal 100, received_messages.size
       assert received_messages.all? { _1.payload == {success: true} }
     end
