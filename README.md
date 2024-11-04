@@ -26,6 +26,29 @@
 
 LocalBus is a pub/sub system for Ruby applications that helps organize intra-process communication. It provides a clean way to decouple components and manage event-driven behavior within a single process through two interfaces:
 
+<!-- Tocer[start]: Auto-generated, don't remove. -->
+
+## Table of Contents
+
+  - [Why LocalBus?](#why-localbus)
+  - [Installation](#installation)
+  - [Quick Start](#quick-start)
+    - [Interfaces](#interfaces)
+    - [Bus (immediate processing)](#bus-immediate-processing)
+    - [Station (background processing)](#station-background-processing)
+  - [Advanced Usage & Considerations](#advanced-usage--considerations)
+    - [Concurrency Controls](#concurrency-controls)
+      - [Bus Interface (Async)](#bus-interface-async)
+      - [Station Interface (Thread Pool)](#station-interface-thread-pool)
+    - [Error Handling & Recovery](#error-handling--recovery)
+    - [Memory Considerations](#memory-considerations)
+    - [Blocking Operations](#blocking-operations)
+    - [Shutdown & Cleanup](#shutdown--cleanup)
+    - [Limitations](#limitations)
+  - [Sponsors](#sponsors)
+
+<!-- Tocer[finish]: Auto-generated, don't remove. -->
+
 ## Why LocalBus?
 
 A message bus (or enterprise service bus) is an architectural pattern that enables different parts of an application to communicate without direct knowledge of each other. Think of it as a smart postal service for your application - components can send messages to topics, and other components can listen for those messages, all without knowing about each other directly.
@@ -46,7 +69,7 @@ Even within a single process, this pattern offers powerful benefits:
 bundle add local_bus
 ```
 
-## Usage
+## Quick Start
 
 ### Interfaces
 
@@ -94,17 +117,6 @@ result = station.publish("email.welcome", user_id: 123)
 result.wait  # Blocks until all subscribers complete
 result.value # blocks and waits until all subscribers complete and returns the subscribers
 ```
-
-## Sponsors
-
-<p align="center">
-  <em>Proudly sponsored by</em>
-</p>
-<p align="center">
-  <a href="https://www.clickfunnels.com?utm_source=hopsoft&utm_medium=open-source&utm_campaign=local_bus">
-    <img src="https://images.clickfunnel.com/uploads/digital_asset/file/176632/clickfunnels-dark-logo.svg" width="575" />
-  </a>
-</p>
 
 ## Advanced Usage & Considerations
 
@@ -197,11 +209,11 @@ end
 
 ### Shutdown & Cleanup
 
-LocalBus does it's best to handle graceful shutdown when the process exits, and works to ensure published messages are processed.
+LocalBus does its best to handle graceful shutdown when the process exits, and works to ensure published messages are processed.
 However, it's possible that some messages may be lost when the process exits.
 
 Factor for potential message loss when designing your system.
-For example, idempotentcy _(i.e. messages that can be re-published without unintended side effects)_.
+For example, idempotency _(i.e. messages that can be re-published without unintended side effects)_.
 
 ### Limitations
 
@@ -213,3 +225,14 @@ For example, idempotentcy _(i.e. messages that can be re-published without unint
 - No built-in retry mechanism for failed subscribers
 
 Consider these limitations when designing your system architecture.
+
+## Sponsors
+
+<p align="center">
+  <em>Proudly sponsored by</em>
+</p>
+<p align="center">
+  <a href="https://www.clickfunnels.com?utm_source=hopsoft&utm_medium=open-source&utm_campaign=local_bus">
+    <img src="https://images.clickfunnel.com/uploads/digital_asset/file/176632/clickfunnels-dark-logo.svg" width="575" />
+  </a>
+</p>
