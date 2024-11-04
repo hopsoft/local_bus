@@ -24,7 +24,7 @@
 
 # LocalBus
 
-LocalBus is a pub/sub system for Ruby applications that helps organize intra-process communication. It provides a clean way to decouple components and manage event-driven behavior within a single process through two interfaces:
+LocalBus is a lightweight pub/sub system for Ruby that helps organize and simplify intra-process communication.
 
 <!-- Tocer[start]: Auto-generated, don't remove. -->
 
