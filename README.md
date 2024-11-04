@@ -24,28 +24,28 @@
 
 # LocalBus
 
-LocalBus is a pub/sub system for Ruby applications that helps organize intra-process communication. It provides a clean way to decouple components and manage event-driven behavior within a single process through two interfaces:
+LocalBus is a lightweight pub/sub system for Ruby that helps organize and simplify intra-process communication.
 
 <!-- Tocer[start]: Auto-generated, don't remove. -->
 
 ## Table of Contents
 
-  - [Why LocalBus?](#why-localbus)
-  - [Installation](#installation)
-  - [Quick Start](#quick-start)
-    - [Interfaces](#interfaces)
-    - [Bus (immediate processing)](#bus-immediate-processing)
-    - [Station (background processing)](#station-background-processing)
-  - [Advanced Usage & Considerations](#advanced-usage--considerations)
-    - [Concurrency Controls](#concurrency-controls)
-      - [Bus Interface (Async)](#bus-interface-async)
-      - [Station Interface (Thread Pool)](#station-interface-thread-pool)
-    - [Error Handling & Recovery](#error-handling--recovery)
-    - [Memory Considerations](#memory-considerations)
-    - [Blocking Operations](#blocking-operations)
-    - [Shutdown & Cleanup](#shutdown--cleanup)
-    - [Limitations](#limitations)
-  - [Sponsors](#sponsors)
+- [Why LocalBus?](#why-localbus)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+  - [Interfaces](#interfaces)
+  - [Bus (immediate processing)](#bus-immediate-processing)
+  - [Station (background processing)](#station-background-processing)
+- [Advanced Usage & Considerations](#advanced-usage--considerations)
+  - [Concurrency Controls](#concurrency-controls)
+    - [Bus Interface (Async)](#bus-interface-async)
+    - [Station Interface (Thread Pool)](#station-interface-thread-pool)
+  - [Error Handling & Recovery](#error-handling--recovery)
+  - [Memory Considerations](#memory-considerations)
+  - [Blocking Operations](#blocking-operations)
+  - [Shutdown & Cleanup](#shutdown--cleanup)
+  - [Limitations](#limitations)
+- [Sponsors](#sponsors)
 
 <!-- Tocer[finish]: Auto-generated, don't remove. -->
 
@@ -227,6 +227,11 @@ For example, idempotency _(i.e. messages that can be re-published without uninte
 - No built-in retry mechanism for failed subscribers
 
 Consider these limitations when designing your system architecture.
+
+## See Also
+
+- [Message Bus](https://github.com/discourse/message_bus) - A reliable and robust messaging bus for Ruby and Rack
+- [Wisper](https://github.com/krisleech/wisper) - A micro library providing Ruby objects with Publish-Subscribe capabilities
 
 ## Sponsors
 
