@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# rbs_inline: enabled
+
 class LocalBus
   # A promise-like object that wraps an Async::Barrier and a list of Subscribers.
   # Delegates #wait to the barrier and all other methods to the subscriber list.

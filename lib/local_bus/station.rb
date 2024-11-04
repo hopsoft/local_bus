@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+# rbs_inline: enabled
 # rubocop:disable Lint/MissingCopEnableDirective
 # rubocop:disable Style/ArgumentsForwarding
 

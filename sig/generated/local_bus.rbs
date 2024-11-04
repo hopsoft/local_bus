@@ -1,0 +1,13 @@
+# Generated from lib/local_bus.rb with RBS::Inline
+
+class LocalBus
+  include Singleton
+
+  attr_reader bus: untyped
+
+  attr_reader station: untyped
+
+  private
+
+  def initialize: () -> untyped
+end

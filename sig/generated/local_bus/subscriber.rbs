@@ -1,6 +1,4 @@
-# frozen_string_literal: true
-
-# rbs_inline: enabled
+# Generated from lib/local_bus/subscriber.rb with RBS::Inline
 
 class LocalBus
   # Wraps a Callable (Proc) and Message intended for asynchronous execution.
@@ -10,124 +8,76 @@ class LocalBus
       # Constructor
       # @rbs message: String -- error message
       # @rbs cause: StandardError? -- underlying cause of the error
-      def initialize(message, cause:)
-        super(message)
-        @cause = cause
-      end
+      def initialize: (String message, cause: StandardError?) -> untyped
 
       # Underlying cause of the error
       # @rbs return: StandardError?
-      attr_reader :cause
+      attr_reader cause: untyped
     end
 
     # Constructor
     # @rbs callable: #call -- the subscriber's callable object
     # @rbs message: Message -- the message to be processed
-    def initialize(callable, message)
-      @callable = callable
-      @message = message
-      @id = callable.object_id
-      @source_location = callable.source_location
-      @metadata = {}
-    end
+    def initialize: (untyped callable, Message message) -> untyped
 
     # Unique identifier for the subscriber
     # @rbs return: String
-    attr_reader :id
+    attr_reader id: untyped
 
     # Source location of the callable
     # @rbs return: Array[String, Integer]?
-    attr_reader :source_location
+    attr_reader source_location: untyped
 
     # Callable object -- Proc, lambda, etc. (must respond to #call)
     # @rbs return: #call
-    attr_reader :callable
+    attr_reader callable: untyped
 
     # Error if the subscriber fails (available after performing)
     # @rbs return: Error?
-    attr_reader :error
+    attr_reader error: untyped
 
     # Message for the subscriber to process
     # @rbs return: Message
-    attr_reader :message
+    attr_reader message: untyped
 
     # Metadata for the subscriber (available after performing)
     # @rbs return: Hash[Symbol, untyped]
-    attr_reader :metadata
+    attr_reader metadata: untyped
 
     # Value returned by the callable (available after performing)
     # @rbs return: untyped
-    attr_reader :value
+    attr_reader value: untyped
 
     # Indicates if the subscriber has been performed
     # @rbs return: bool
-    def performed?
-      metadata.any?
-    end
+    def performed?: () -> bool
 
     # Checks if the subscriber is pending
     # @rbs return: bool
-    def pending?
-      metadata.empty?
-    end
+    def pending?: () -> bool
 
     # Performs the subscriber's callable
     # @rbs return: void
-    def perform
-      return if performed?
-
-      with_metadata do
-        @value = callable.call(message)
-      rescue => cause
-        @error = Error.new("Invocation failed! #{cause.message}", cause: cause)
-      end
-    end
+    def perform: () -> void
 
     # Handles timeout for the subscriber
     # @rbs cause: StandardError -- the cause of the timeout
     # @rbs return: void
-    def timeout(cause)
-      return if performed?
-
-      with_metadata do
-        @error = Error.new("Timeout expired before invocation! Waited #{message.timeout} seconds!", cause: cause)
-      end
-    end
+    def timeout: (StandardError cause) -> void
 
     # Returns the subscriber's data as a hash
     # @rbs return: Hash[Symbol, untyped]
-    def to_h
-      {
-        error: error,
-        metadata: metadata,
-        value: value
-      }
-    end
+    def to_h: () -> Hash[Symbol, untyped]
 
     # Allows pattern matching on subscriber attributes
     # @rbs keys: Array[Symbol] -- keys to extract from the subscriber
     # @rbs return: Hash[Symbol, untyped]
-    def deconstruct_keys(keys)
-      keys.any? ? to_h.slice(*keys) : to_h
-    end
+    def deconstruct_keys: (Array[Symbol] keys) -> Hash[Symbol, untyped]
 
     private
 
     # Captures metadata for the subscriber's performance
     # @rbs return: void
-    def with_metadata
-      started_at = Time.now
-      yield
-      @metadata = {
-        id: SecureRandom.uuid_v7,
-        thread_id: Thread.current.object_id,
-        source_location: source_location,
-        started_at: started_at,
-        finished_at: Time.now,
-        duration: Time.now - started_at,
-        latency: Time.now - message.created_at,
-        message: message
-      }.freeze
-    end
+    def with_metadata: () -> void
   end
 end
