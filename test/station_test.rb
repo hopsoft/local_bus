@@ -20,6 +20,21 @@ class LocalBus
       refute station.running?
     end
 
+    def test_publish
+      station = Station.new
+      station.subscribe "example" do |message|
+        sleep 0.1
+        {received: message.payload}
+      end
+
+      result = station.publish("example", station: true)
+      result.wait
+      subscribers = result.value
+
+      assert_kind_of Concurrent::Promises::Future, result
+      assert subscribers.all? { _1 in LocalBus::Subscriber }
+    end
+
     def test_publish_and_wait_with_1_subscriber
       station = Station.new
 

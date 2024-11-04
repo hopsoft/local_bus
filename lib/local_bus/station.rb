@@ -160,8 +160,8 @@ class LocalBus
 
       future = Concurrent::Promises.future_on(pool) do
         case timeout
-        in 0 then bus.publish(topic, **payload).wait
-        else bus.publish(topic, timeout: timeout, **payload).wait
+        in 0 then bus.publish(topic, **payload).value
+        else bus.publish(topic, timeout: timeout, **payload).value
         end
       end
 

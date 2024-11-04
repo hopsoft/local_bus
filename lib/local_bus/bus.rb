@@ -126,7 +126,7 @@ class LocalBus
         end
       end
 
-      Monitor.new(barrier, *subscribers)
+      Pledge.new(barrier, *subscribers)
     end
   end
 end

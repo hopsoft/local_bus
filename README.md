@@ -45,6 +45,7 @@ bundle add local_bus
 ## Usage
 
 ### Bus (Immediate Processing)
+
 Best for real-time operations like logging, metrics, and state updates.
 
 ```ruby
@@ -55,13 +56,13 @@ bus.subscribe "user.created" do |message|
   true
 end
 
-# Returns a Monitor that tracks subscriber completion
-monitor = bus.publish("user.created", user_id: 123)
-monitor.wait  # Blocks until all subscribers complete
-subscribers = monitor.value  # Safe to access after wait
+# publish returns a promise like object that can be used to track subscriber completion
+subscribers = bus.publish("user.created", user_id: 123)
+subscribers.wait  # Blocks until all subscribers complete
 ```
 
 ### Station (Background Processing)
+
 Best for async operations like emails, notifications, and resource-intensive tasks.
 
 ```ruby

@@ -52,8 +52,11 @@ class LocalBus
       end
 
       start = Time.now
-      subscribers = bus.publish(@topic)
+      result = bus.publish(@topic)
+      result.wait
+      subscribers = result.value
 
+      assert result.value.all? { _1 in LocalBus::Subscriber }
       assert_equal (0..bus.concurrency - 1).to_a, subscribers.map(&:value)
       assert (@latency...(@latency * 1.25)).cover?(Time.now - start)
     end
@@ -80,8 +83,9 @@ class LocalBus
         end
       end
 
-      subscribers = bus.publish(@topic, test: true)
-      subscribers.wait
+      promise = bus.publish(@topic, test: true)
+      promise.wait
+      subscribers = promise.value
 
       assert_equal bus.concurrency, bus.subscriptions[@topic].size
       assert_equal bus.concurrency, subscribers.size
@@ -102,7 +106,7 @@ class LocalBus
       end
       assert_equal count, bus.subscriptions[@topic].size
 
-      subscribers = bus.publish(@topic, timeout: @latency, test: true)
+      subscribers = bus.publish(@topic, timeout: @latency, test: true).value
       assert_equal count, subscribers.size
 
       pending = subscribers.select(&:pending?)
