@@ -27,7 +27,7 @@ class LocalBus
     # @see https://ruby-concurrency.github.io/concurrent-ruby/1.3.4/Concurrent/ThreadPoolExecutor.html
     THREAD_POOL_OPTIONS = {
       max_queue: 5_000, # max number of pending tasks allowed in the queue
-      fallback_policy: :abort # raises an exception and discards the task when the queue is full
+      fallback_policy: :caller_runs # Options: :abort, :discard, :caller_runs
     }.freeze
 
     # Constructor
