@@ -8,8 +8,8 @@ Gem::Specification.new do |s|
   s.authors = ["Nate Hopkins (hopsoft)"]
   s.email = ["natehop@gmail.com"]
   s.homepage = "https://github.com/hopsoft/local_bus"
-  s.summary = "A thread-safe pub/sub system for decoupled intra-process communication"
-  s.description = s.summary
+  s.summary = "A high-performance, thread-safe pub/sub system for Ruby applications with async I/O and background processing support"
+  s.description = "LocalBus provides a robust publish/subscribe system for Ruby applications that enables decoupled intra-process communication. It features both immediate (async I/O) and background (thread pool) processing modes, comprehensive error handling, and configurable concurrency controls - all designed to help organize event-driven behavior within a single process."
   s.license = "MIT"
 
   s.metadata["homepage_uri"] = s.homepage
