@@ -87,7 +87,7 @@ Both interfaces ensure optimal performance:
 Best for real-time operations like logging, metrics, and state updates.
 
 ```ruby
-bus = LocalBus.instance.bus
+bus = LocalBus::Bus.new # ... or LocalBus.instance.bus
 
 bus.subscribe "user.created" do |message|
   AuditLog.record(message.payload)
