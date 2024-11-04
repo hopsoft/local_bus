@@ -96,7 +96,7 @@ end
 
 # publish returns a promise-like object that resolves to subscribers
 result = bus.publish("user.created", user_id: 123)
-result.wait  # Blocks until all subscribers complete
+result.wait  # blocks until all subscribers complete
 result.value # blocks and waits until all subscribers complete and returns the subscribers
 ```
 
@@ -114,7 +114,7 @@ end
 
 # Returns a Promise or Future that resolves to subscribers
 result = station.publish("email.welcome", user_id: 123)
-result.wait  # Blocks until all subscribers complete
+result.wait  # blocks until all subscribers complete
 result.value # blocks and waits until all subscribers complete and returns the subscribers
 ```
 
