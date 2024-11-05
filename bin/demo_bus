@@ -1,0 +1,31 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "pry-byebug"
+require "pry-doc"
+require "amazing_print"
+require_relative "../lib/local_bus"
+
+AmazingPrint.pry!
+
+bus = LocalBus.instance.bus
+
+bus.concurrency.times do |num|
+  bus.subscribe(@topic) do |_message|
+    sleep 1 # sleep 1 second per subscriber
+    puts "In subscriber: #{num}"
+    num
+  end
+end
+
+start = Time.now
+puts "Calling Bus#publish with #{bus.concurrency} subscribers that all sleep for 1 second each."
+result = bus.publish(@topic)
+
+# NOTE: The Bus will block until all subscribers complete even if we don't explicitly wait or collect the value
+subscribers = result.value
+
+ap(
+  duration: Time.now - start,
+  values: subscribers.map(&:value)
+)

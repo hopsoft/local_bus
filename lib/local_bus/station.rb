@@ -99,6 +99,8 @@ class LocalBus
 
           @pool = nil
         end
+      rescue
+        nil # ignore errors during shutdown
       end
 
       # Clean up shutdown handler
@@ -213,9 +215,9 @@ class LocalBus
     # @rbs on: Array[String] -- signals to trap
     # @rbs return: void
     def enable_safe_shutdown(on:)
+      at_exit { stop }
       on.each do |signal|
         trap signal do
-          # Only queue the signal if we haven't started shutdown
           @shutdown_queue.push signal unless @shutdown.true?
         rescue
           nil
