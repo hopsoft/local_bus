@@ -4,6 +4,12 @@ require_relative "test_helper"
 
 class LocalBus
   class StationTest < Minitest::Test
+    class TestCallable
+      def call(message)
+        message.payload
+      end
+    end
+
     def setup
       @topic = "test"
       @latency = 0.25
@@ -33,6 +39,19 @@ class LocalBus
 
       assert_kind_of Concurrent::Promises::Future, result
       assert subscribers.all? { _1 in LocalBus::Subscriber }
+    end
+
+    def test_publish_with_callable_object
+      station = Station.new
+      station.bus.concurrency.times do |num|
+        station.subscribe @topic, callable: TestCallable.new
+      end
+
+      subscribers = station.publish(@topic, number: rand(10)).value
+
+      assert_equal station.bus.concurrency, subscribers.size
+      assert subscribers.all? { _1 in Subscriber }
+      assert subscribers.map(&:value).all? { _1[:number] in Integer }
     end
 
     def test_publish_and_wait_with_1_subscriber

@@ -27,7 +27,10 @@ class LocalBus
       @callable = callable
       @message = message
       @id = callable.object_id
-      @source_location = callable.source_location
+      @source_location = case callable
+      in Proc then callable.source_location
+      else callable.method(:call).source_location
+      end
       @metadata = {}
     end
 

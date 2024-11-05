@@ -101,6 +101,33 @@ result.wait  # blocks until all subscribers complete
 result.value # blocks and waits until all subscribers complete and returns the subscribers
 ```
 
+Subscribe with an explicit `callable`.
+
+```ruby
+callable = ->(message) { "Received message: #{message.payload}" }
+LocalBus.instance.bus.subscribe "user.created", callable: callable
+
+subscribers = LocalBus.instance.bus.publish("user.created", user_id: 123).value
+# => [#<LocalBus::Subscriber:0x0000000126b7cf38 ...>]
+
+subscribers.first.value
+# => "Received message: {:user_id=>123}"
+
+# you can use any object that responds to #call
+class ExampleCallable
+  def call(message)
+    "Received message: #{message.payload}"
+  end
+end
+
+LocalBus.instance.bus.subscribe "user.created", callable: ExampleCallable.new
+subscribers = LocalBus.instance.bus.publish("user.created", user_id: 123).value
+# => [#<LocalBus::Subscriber:0x0000000126b7cf38 ...>]
+
+subscribers.first.value
+# => "Received message: {:user_id=>123}"
+```
+
 ### Station (background processing)
 
 Best for async operations like emails, notifications, and resource-intensive tasks.
@@ -118,6 +145,33 @@ result = station.publish("email.welcome", user_id: 123)
 
 result.wait  # blocks until all subscribers complete
 result.value # blocks and waits until all subscribers complete and returns the subscribers
+```
+
+Subscribe with an explicit `callable`.
+
+```ruby
+callable = ->(message) { "Received message: #{message.payload}" }
+LocalBus.instance.station.subscribe "email.welcome", callable: callable
+
+subscribers = LocalBus.instance.station.publish("email.welcome", user_id: 123).value
+# => [#<LocalBus::Subscriber:0x0000000126b7cf38 ...>]
+
+subscribers.first.value
+# => "Received message: {:user_id=>123}"
+
+# you can use any object that responds to #call
+class ExampleCallable
+  def call(message)
+    "Received message: #{message.payload}"
+  end
+end
+
+LocalBus.instance.station.subscribe "email.welcome", callable: ExampleCallable.new
+subscribers = LocalBus.instance.station.publish("email.welcome", user_id: 123).value
+# => [#<LocalBus::Subscriber:0x0000000126b7cf38 ...>]
+
+subscribers.first.value
+# => "Received message: {:user_id=>123}"
 ```
 
 ## Advanced Usage & Considerations
