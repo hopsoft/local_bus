@@ -73,6 +73,7 @@ class LocalBus
     # @rbs topic: String -- topic name
     # @rbs return: self
     def unsubscribe_all(topic)
+      topic = topic.to_s
       @subscriptions[topic].clear
       @subscriptions.delete topic
       self
