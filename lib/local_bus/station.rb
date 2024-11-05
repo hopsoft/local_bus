@@ -124,8 +124,7 @@ class LocalBus
     # @rbs &block: (Message) -> untyped -- alternative way to provide a callable
     # @rbs return: self
     def subscribe(topic, callable: nil, &block)
-      callable ||= block
-      bus.subscribe(topic, &callable)
+      bus.subscribe(topic, callable: callable || block)
       self
     end
 

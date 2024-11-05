@@ -4,6 +4,12 @@ require_relative "test_helper"
 
 class LocalBus
   class BusTest < Minitest::Test
+    class TestCallable
+      def call(message)
+        message.payload
+      end
+    end
+
     def setup
       @topic = "test"
       @latency = 0.25
@@ -59,6 +65,19 @@ class LocalBus
       assert result.value.all? { _1 in LocalBus::Subscriber }
       assert_equal (0..bus.concurrency - 1).to_a, subscribers.map(&:value)
       assert (@latency...(@latency * 1.25)).cover?(Time.now - start)
+    end
+
+    def test_publish_with_callable_object
+      bus = Bus.new
+      bus.concurrency.times do |num|
+        bus.subscribe @topic, callable: TestCallable.new
+      end
+
+      subscribers = bus.publish(@topic, number: rand(10)).value
+
+      assert_equal bus.concurrency, subscribers.size
+      assert subscribers.all? { _1 in Subscriber }
+      assert subscribers.map(&:value).all? { _1[:number] in Integer }
     end
 
     def test_subscriber_signature
