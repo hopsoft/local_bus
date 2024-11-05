@@ -275,7 +275,7 @@ For example, idempotency _(i.e. messages that can be re-published without uninte
 
 - The Bus interface is single-threaded - long-running subscribers can impact latency
 - The Station interface may drop messages if configured with `:discard` fallback policy
-- No persistence - pending messages are lost on process restart
+- No persistence - pending messages may be lost on process restart
 - No distributed support - communication limited to single process
 - Large payloads can impact memory usage, especially under high load
 - No built-in retry mechanism for failed subscribers

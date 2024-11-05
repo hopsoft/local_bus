@@ -77,6 +77,28 @@ class LocalBus
       assert_equal({success: true}, received_message.payload)
     end
 
+    def test_mixed_subscribers
+      station = Station.new
+      station.subscribe "user.created" do |message|
+        raise "Something went wrong!"
+      end
+
+      station.subscribe "user.created" do |message|
+        # This still executes despite the error above
+        true
+      end
+
+      # The publish operation completes with partial success
+      result = station.publish("user.created", user_id: 123)
+      subscribers = result.value
+      errored_subscribers = result.value.select(&:error)
+      successful_subscribers = result.value.reject(&:error)
+
+      assert_equal 2, subscribers.size
+      assert_equal 1, errored_subscribers.size
+      assert_equal 1, successful_subscribers.size
+    end
+
     def test_publish_and_chain_futures_with_then
       station = Station.new
 

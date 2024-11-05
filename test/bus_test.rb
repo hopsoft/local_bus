@@ -113,6 +113,28 @@ class LocalBus
       assert subscribers.all? { _1.error.cause.message.start_with? "Intentional Error!" }
     end
 
+    def test_mixed_subscribers
+      bus = Bus.new
+      bus.subscribe "user.created" do |message|
+        raise "Something went wrong!"
+      end
+
+      bus.subscribe "user.created" do |message|
+        # This still executes despite the error above
+        true
+      end
+
+      # The publish operation completes with partial success
+      result = bus.publish("user.created", user_id: 123)
+      subscribers = result.value
+      errored_subscribers = result.value.select(&:error)
+      successful_subscribers = result.value.reject(&:error)
+
+      assert_equal 2, subscribers.size
+      assert_equal 1, errored_subscribers.size
+      assert_equal 1, successful_subscribers.size
+    end
+
     def test_timeout
       bus = Bus.new
 
