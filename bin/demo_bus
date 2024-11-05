@@ -11,7 +11,7 @@ AmazingPrint.pry!
 bus = LocalBus.instance.bus
 
 bus.concurrency.times do |num|
-  bus.subscribe(@topic) do |_message|
+  bus.subscribe "bus-demo" do |_message|
     sleep 1 # sleep 1 second per subscriber
     puts "In subscriber: #{num}"
     num
@@ -20,7 +20,7 @@ end
 
 start = Time.now
 puts "Calling Bus#publish with #{bus.concurrency} subscribers that all sleep for 1 second each."
-result = bus.publish(@topic)
+result = bus.publish("bus-demo")
 
 # NOTE: The Bus will block until all subscribers complete even if we don't explicitly wait or collect the value
 subscribers = result.value

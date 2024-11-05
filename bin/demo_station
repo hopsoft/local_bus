@@ -12,7 +12,7 @@ station = LocalBus.instance.station
 bus = station.bus
 
 bus.concurrency.times do |num|
-  station.subscribe(@topic) do |_message|
+  station.subscribe("station-demo") do |_message|
     sleep 1 # sleep 1 second per subscriber
     puts "In subscriber: #{num}"
     num
@@ -21,7 +21,7 @@ end
 
 start = Time.now
 puts "Calling Station#publish with #{bus.concurrency} subscribers that all sleep for 1 second each."
-result = station.publish(@topic)
+result = station.publish("station-demo")
 puts "Got here fast because the Station runs on a separate thread. Now we wait..."
 
 # NOTE: The Station will block until all subscribers complete if we wait or request the value.
