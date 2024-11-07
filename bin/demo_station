@@ -12,7 +12,7 @@ station = LocalBus.instance.station
 bus = station.bus
 
 bus.concurrency.times do |num|
-  station.subscribe("station-demo") do |_message|
+  station.subscribe "station-demo" do |_message|
     sleep 1 # sleep 1 second per subscriber
     puts "In subscriber: #{num}"
     num

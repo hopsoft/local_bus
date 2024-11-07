@@ -184,7 +184,7 @@ The Bus interface uses Async's Semaphore to limit resource consumption:
 
 ```ruby
 # Configure concurrency limits for the Bus
-bus = LocalBus::Bus.new(concurrency_limit: 10)
+bus = LocalBus::Bus.new(concurrency: 10)
 
 # The semaphore ensures only N concurrent operations run at once
 bus.subscribe "resource.intensive" do |message|
