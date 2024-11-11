@@ -43,13 +43,13 @@ class LocalBus
 
     def test_publish_with_callable_object
       station = Station.new
-      station.bus.concurrency.times do |num|
+      station.bus.max_concurrency.times do |num|
         station.subscribe @topic, callable: TestCallable.new
       end
 
       subscribers = station.publish(@topic, number: rand(10)).value
 
-      assert_equal station.bus.concurrency, subscribers.size
+      assert_equal station.bus.max_concurrency, subscribers.size
       assert subscribers.all? { _1 in Subscriber }
       assert subscribers.map(&:value).all? { _1[:number] in Integer }
     end
@@ -145,7 +145,7 @@ class LocalBus
     def test_publish_with_timeout
       latency = 0.25
       concurrency = 2
-      bus = Bus.new(concurrency: concurrency)
+      bus = Bus.new(max_concurrency: concurrency)
       station = Station.new(bus: bus)
 
       (concurrency * 2).times do |i|

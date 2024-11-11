@@ -8,27 +8,27 @@ class LocalBus
     include MonitorMixin
 
     # Constructor
-    # @note Creates a new Bus instance with specified concurrency
-    # @rbs concurrency: Integer -- maximum number of concurrent tasks (default: Concurrent.processor_count)
-    def initialize(concurrency: Concurrent.processor_count)
+    # @note Creates a new Bus instance with specified max concurrency (i.e. number of tasks that can run in parallel)
+    # @rbs max_concurrency: Integer -- maximum number of concurrent tasks (default: Concurrent.processor_count)
+    def initialize(max_concurrency: Concurrent.processor_count)
       super()
-      @concurrency = concurrency.to_i
+      @max_concurrency = max_concurrency.to_i
       @subscriptions = Concurrent::Hash.new do |hash, key|
         hash[key] = Concurrent::Set.new
       end
     end
 
     # Maximum number of concurrent tasks that can run in "parallel"
-    # @rbs return: Integer -- current concurrency value
-    def concurrency
-      synchronize { @concurrency }
+    # @rbs return: Integer
+    def max_concurrency
+      synchronize { @max_concurrency }
     end
 
-    # Sets the concurrency
-    # @rbs concurrency: Integer -- max number of concurrent tasks that can run in "parallel"
+    # Sets the max concurrency
+    # @rbs value: Integer -- max number of concurrent tasks that can run in "parallel"
     # @rbs return: Integer -- new concurrency value
-    def concurrency=(value)
-      synchronize { @concurrency = value.to_i }
+    def max_concurrency=(value)
+      synchronize { @max_concurrency = value.to_i }
     end
 
     # Registered topics that have subscribers
@@ -112,7 +112,7 @@ class LocalBus
       if subscribers.any?
         Sync do |task|
           task.with_timeout timeout.to_f do
-            semaphore = Async::Semaphore.new(concurrency, parent: barrier)
+            semaphore = Async::Semaphore.new(max_concurrency, parent: barrier)
 
             subscribers.each do |subscriber|
               semaphore.async do

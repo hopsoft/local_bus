@@ -30,22 +30,23 @@ LocalBus is a lightweight pub/sub system for Ruby that helps organize and simpli
 
 ## Table of Contents
 
-- [Why LocalBus?](#why-localbus)
-- [Installation](#installation)
-- [Quick Start](#quick-start)
-  - [Interfaces](#interfaces)
-  - [Bus (immediate processing)](#bus-immediate-processing)
-  - [Station (background processing)](#station-background-processing)
-- [Advanced Usage & Considerations](#advanced-usage--considerations)
-  - [Concurrency Controls](#concurrency-controls)
-    - [Bus Interface (Async)](#bus-interface-async)
-    - [Station Interface (Thread Pool)](#station-interface-thread-pool)
-  - [Error Handling & Recovery](#error-handling--recovery)
-  - [Memory Considerations](#memory-considerations)
-  - [Blocking Operations](#blocking-operations)
-  - [Shutdown & Cleanup](#shutdown--cleanup)
-  - [Limitations](#limitations)
-- [Sponsors](#sponsors)
+  - [Why LocalBus?](#why-localbus)
+  - [Installation](#installation)
+  - [Quick Start](#quick-start)
+    - [Interfaces](#interfaces)
+    - [Bus (immediate processing)](#bus-immediate-processing)
+    - [Station (background processing)](#station-background-processing)
+  - [Advanced Usage & Considerations](#advanced-usage--considerations)
+    - [Concurrency Controls](#concurrency-controls)
+      - [Bus Interface (Async)](#bus-interface-async)
+      - [Station Interface (Thread Pool)](#station-interface-thread-pool)
+    - [Error Handling & Recovery](#error-handling--recovery)
+    - [Memory Considerations](#memory-considerations)
+    - [Blocking Operations](#blocking-operations)
+    - [Shutdown & Cleanup](#shutdown--cleanup)
+    - [Limitations](#limitations)
+  - [See Also](#see-also)
+  - [Sponsors](#sponsors)
 
 <!-- Tocer[finish]: Auto-generated, don't remove. -->
 
@@ -184,7 +185,7 @@ The Bus interface uses Async's Semaphore to limit resource consumption:
 
 ```ruby
 # Configure concurrency limits for the Bus
-bus = LocalBus::Bus.new(concurrency: 10)
+bus = LocalBus::Bus.new(max_concurrency: 10)
 
 # The semaphore ensures only N concurrent operations run at once
 bus.subscribe "resource.intensive" do |message|
@@ -193,7 +194,7 @@ bus.subscribe "resource.intensive" do |message|
 end
 ```
 
-When the concurrency limit is reached, new publish operations will wait until a slot becomes available. This prevents memory bloat but means you should be mindful of timeouts in your subscribers.
+When the max concurrency limit is reached, new publish operations will wait until a slot becomes available. This prevents memory bloat but means you should be mindful of timeouts in your subscribers.
 
 #### Station Interface (Thread Pool)
 
@@ -203,7 +204,7 @@ The Station interface uses Concurrent Ruby's fixed thread pool with a fallback p
 # Configure the thread pool size for the Station
 station = LocalBus::Station.new(
   max_queue: 5_000, # Maximum number of queued items
-  threads: 10, # Maximum pool size
+  max_threads: 10, # Maximum pool size
   fallback_policy: :caller_runs # Runs on calling thread
 )
 ```

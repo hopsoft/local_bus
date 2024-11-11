@@ -33,21 +33,21 @@ class LocalBus
 
     # Constructor
     # @rbs bus: Bus -- local message bus (default: Bus.new)
-    # @rbs threads: Integer -- number of threads (default: Concurrent.processor_count)
+    # @rbs max_threads: Integer -- number of max_threads (default: Concurrent.processor_count)
     # @rbs default_timeout: Float -- seconds to wait for a future to complete
     # @rbs shutdown_timeout: Float -- seconds to wait for all futures to complete on process exit
     # @rbs options: Hash[Symbol, untyped] -- Concurrent::FixedThreadPool options
     # @rbs return: void
     def initialize(
       bus: Bus.new,
-      threads: Concurrent.processor_count,
+      max_threads: Concurrent.processor_count,
       default_timeout: 0,
       shutdown_timeout: 8,
       **options
     )
       super()
       @bus = bus
-      @threads = [2, threads].max.to_i
+      @max_threads = [2, max_threads].max.to_i
       @default_timeout = default_timeout.to_f
       @shutdown_timeout = shutdown_timeout.to_f
       @shutdown = Concurrent::AtomicBoolean.new(false)
@@ -60,7 +60,7 @@ class LocalBus
 
     # Number of threads used to process messages
     # @rbs return: Integer
-    attr_reader :threads
+    attr_reader :max_threads
 
     # Default timeout for message processing (in seconds)
     # @rbs return: Float
@@ -78,7 +78,7 @@ class LocalBus
         return if running?
 
         start_shutdown_handler
-        @pool = Concurrent::FixedThreadPool.new(threads, THREAD_POOL_OPTIONS.merge(options))
+        @pool = Concurrent::FixedThreadPool.new(max_threads, THREAD_POOL_OPTIONS.merge(options))
         enable_safe_shutdown on: ["HUP", "INT", "QUIT", "TERM"]
       end
     end
