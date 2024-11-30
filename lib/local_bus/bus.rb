@@ -9,39 +9,41 @@ class LocalBus
 
     # Constructor
     # @note Creates a new Bus instance with specified max concurrency (i.e. number of tasks that can run in parallel)
-    # @rbs max_concurrency: Integer -- maximum number of concurrent tasks (default: Concurrent.processor_count)
-    def initialize(max_concurrency: Concurrent.processor_count)
+    # @rbs concurrency: Integer -- maximum number of concurrent tasks (default: Etc.nprocessors)
+    def initialize(concurrency: Etc.nprocessors)
       super()
-      @max_concurrency = max_concurrency.to_i
-      @subscriptions = Concurrent::Hash.new do |hash, key|
-        hash[key] = Concurrent::Set.new
+      @concurrency = concurrency.to_i
+      @subscriptions = Hash.new do |hash, key|
+        hash[key] = Set.new
       end
     end
 
     # Maximum number of concurrent tasks that can run in "parallel"
     # @rbs return: Integer
-    def max_concurrency
-      synchronize { @max_concurrency }
+    def concurrency
+      synchronize { @concurrency }
     end
 
     # Sets the max concurrency
     # @rbs value: Integer -- max number of concurrent tasks that can run in "parallel"
     # @rbs return: Integer -- new concurrency value
-    def max_concurrency=(value)
-      synchronize { @max_concurrency = value.to_i }
+    def concurrency=(value)
+      synchronize { @concurrency = value.to_i }
     end
 
     # Registered topics that have subscribers
     # @rbs return: Array[String] -- list of topic names
     def topics
-      @subscriptions.keys
+      synchronize { @subscriptions.keys }
     end
 
     # Registered subscriptions
     # @rbs return: Hash[String, Array[callable]] -- mapping of topics to callables
     def subscriptions
-      @subscriptions.each_with_object({}) do |(topic, callables), memo|
-        memo[topic] = callables.to_a
+      synchronize do
+        @subscriptions.each_with_object({}) do |(topic, callables), memo|
+          memo[topic] = callables.to_a
+        end
       end
     end
 
@@ -54,7 +56,7 @@ class LocalBus
     def subscribe(topic, callable: nil, &block)
       callable ||= block
       raise ArgumentError, "Subscriber must respond to #call" unless callable.respond_to?(:call, false)
-      @subscriptions[topic.to_s].add callable
+      synchronize { @subscriptions[topic.to_s].add callable }
       self
     end
 
@@ -64,8 +66,10 @@ class LocalBus
     # @rbs return: self
     def unsubscribe(topic, callable:)
       topic = topic.to_s
-      @subscriptions[topic].delete callable
-      @subscriptions.delete(topic) if @subscriptions[topic].empty?
+      synchronize do
+        @subscriptions[topic].delete callable
+        @subscriptions.delete(topic) if @subscriptions[topic].empty?
+      end
       self
     end
 
@@ -74,8 +78,10 @@ class LocalBus
     # @rbs return: self
     def unsubscribe_all(topic)
       topic = topic.to_s
-      @subscriptions[topic].clear
-      @subscriptions.delete topic
+      synchronize do
+        @subscriptions[topic].clear
+        @subscriptions.delete topic
+      end
       self
     end
 
@@ -98,21 +104,28 @@ class LocalBus
     #
     # @note If the timeout is exceeded, the task will be cancelled before all subscribers have completed.
     #
-    # Check the Subscriber for any errors.
+    # Check individual Subscribers for possible errors.
     #
     # @rbs topic: String -- topic name
     # @rbs timeout: Float -- seconds to wait before cancelling (default: 300)
     # @rbs payload: Hash -- message payload
-    # @rbs return: Array[Subscriber] -- list of performed subscribers (empty if no subscribers)
+    # @rbs return: Promise -- promise responsible for processing the message
     def publish(topic, timeout: 300, **payload)
+      publish_message Message.new(topic, timeout: timeout.to_f, **payload)
+    end
+
+    private
+
+    # Publishes a message to the queue
+    # @rbs return: Promise -- promise responsible for processing the message
+    def publish_message(message)
       barrier = Async::Barrier.new
-      message = Message.new(topic, timeout: timeout, **payload)
       subscribers = subscriptions.fetch(message.topic, []).map { Subscriber.new _1, message }
 
       if subscribers.any?
         Sync do |task|
-          task.with_timeout timeout.to_f do
-            semaphore = Async::Semaphore.new(max_concurrency, parent: barrier)
+          task.with_timeout message.timeout do
+            semaphore = Async::Semaphore.new(concurrency, parent: barrier)
 
             subscribers.each do |subscriber|
               semaphore.async do
@@ -129,7 +142,7 @@ class LocalBus
         end
       end
 
-      Pledge.new(barrier, *subscribers)
+      message.promise = Promise.new(barrier, *subscribers)
     end
   end
 end

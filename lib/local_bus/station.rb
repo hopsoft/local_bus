@@ -22,102 +22,72 @@ class LocalBus
   class Station
     include MonitorMixin
 
-    class TimeoutError < StandardError; end
-
-    # Default options for Concurrent::FixedThreadPool (can be overridden via the constructor)
-    # @see https://ruby-concurrency.github.io/concurrent-ruby/1.3.4/Concurrent/ThreadPoolExecutor.html
-    THREAD_POOL_OPTIONS = {
-      max_queue: 5_000, # max number of pending tasks allowed in the queue
-      fallback_policy: :caller_runs # Options: :abort, :discard, :caller_runs
-    }.freeze
+    class QueueFullError < StandardError; end
 
     # Constructor
     # @rbs bus: Bus -- local message bus (default: Bus.new)
-    # @rbs max_threads: Integer -- number of max_threads (default: Concurrent.processor_count)
-    # @rbs default_timeout: Float -- seconds to wait for a future to complete
-    # @rbs shutdown_timeout: Float -- seconds to wait for all futures to complete on process exit
-    # @rbs options: Hash[Symbol, untyped] -- Concurrent::FixedThreadPool options
+    # @rbs interval: Float -- queue polling interval in seconds (default: 0.01)
+    # @rbs size: Integer -- max queue size (default: 5_000)
+    # @rbs timeout: Float -- seconds to wait for a published message to complete
     # @rbs return: void
-    def initialize(
-      bus: Bus.new,
-      max_threads: Concurrent.processor_count,
-      default_timeout: 0,
-      shutdown_timeout: 8,
-      **options
-    )
+    def initialize(bus: Bus.new, interval: 0.01, size: 5_000, timeout: 300)
       super()
       @bus = bus
-      @max_threads = [2, max_threads].max.to_i
-      @default_timeout = default_timeout.to_f
-      @shutdown_timeout = shutdown_timeout.to_f
-      @shutdown = Concurrent::AtomicBoolean.new(false)
-      start(**options)
+      @interval = interval.to_f
+      @size = size.to_i
+      @timeout = timeout.to_f
+      @queue = Containers::PriorityQueue.new
+      start
     end
 
     # Bus instance
     # @rbs return: Bus
     attr_reader :bus
 
-    # Number of threads used to process messages
+    # Queue polling interval in seconds
+    # @rbs return: Float
+    attr_reader :interval
+
+    # Max queue size
     # @rbs return: Integer
-    attr_reader :max_threads
+    attr_reader :size
 
     # Default timeout for message processing (in seconds)
     # @rbs return: Float
-    attr_reader :default_timeout
+    attr_reader :timeout
 
-    # Timeout for graceful shutdown (in seconds)
-    # @rbs return: Float
-    attr_reader :shutdown_timeout
-
-    # Starts the broker
-    # @rbs options: Hash[Symbol, untyped] -- Concurrent::FixedThreadPool options
+    # Starts the station
+    # @rbs interval: Float -- queue polling interval in seconds (default: 0.01)
     # @rbs return: void
-    def start(**options)
+    def start(interval: self.interval)
       synchronize do
-        return if running?
-
-        start_shutdown_handler
-        @pool = Concurrent::FixedThreadPool.new(max_threads, THREAD_POOL_OPTIONS.merge(options))
-        enable_safe_shutdown on: ["HUP", "INT", "QUIT", "TERM"]
-      end
-    end
-
-    # Stops the broker
-    # @rbs timeout: Float -- seconds to wait for all futures to complete
-    # @rbs return: void
-    def stop(timeout: shutdown_timeout)
-      return unless @shutdown.make_true # Ensure we only stop once
-
-      synchronize do
-        if running?
-          # First try graceful shutdown
-          pool.shutdown
-
-          # If graceful shutdown fails, force termination
-          pool.kill unless pool.wait_for_termination(timeout)
-
-          @pool = nil
+        @thread ||= Thread.new do
+          timers = Timers::Group.new
+          timers.every interval do
+            message = @queue.pop
+            bus.send :publish_message, message if message
+          end
+          Thread.current[:timers] = timers
+          loop { timers.wait }
         end
-      rescue
-        nil # ignore errors during shutdown
       end
-
-      # Clean up shutdown handler
-      if @shutdown_thread&.alive?
-        @shutdown_queue&.close
-        @shutdown_thread&.join timeout
-      end
-
-      @shutdown_thread = nil
-      @shutdown_queue = nil
-      @shutdown_completed&.set
     end
 
-    # Indicates if the broker is running
+    # Stops the station
+    # @rbs return: void
+    def stop
+      synchronize do
+        return unless running?
+        @thread[:timers]&.cancel
+        @thread.kill
+        @thread = nil
+      end
+    end
+
+    # Indicates if the station is running
     # @rbs return: bool
     def running?
-      synchronize { pool&.running? }
+      synchronize { !!@thread }
     end
 
     # Subscribe to a topic
@@ -146,81 +116,18 @@ class LocalBus
       self
     end
 
-    # Publishes a message to Bus on a separate thread keeping the main thread free for additional work.
-    #
-    # @note This allows you to publish messages when performing operations like handling web requests
-    #       without blocking the main thread and slowing down the response.
-    #
-    # @see https://ruby-concurrency.github.io/concurrent-ruby/1.3.4/Concurrent/Promises/Future.html
+    # Publishes a message to the queue
     #
     # @rbs topic: String | Symbol -- topic name
+    # @rbs priority: Integer -- priority of the message, higher number == higher priority (default: 1)
     # @rbs timeout: Float -- seconds to wait before cancelling
     # @rbs payload: Hash[Symbol, untyped] -- message payload
-    # @rbs return: Concurrent::Promises::Future
-    def publish(topic, timeout: default_timeout, **payload)
-      timeout = timeout.to_f
-
-      future = Concurrent::Promises.future_on(pool) do
-        case timeout
-        in 0 then bus.publish(topic, **payload).value
-        else bus.publish(topic, timeout: timeout, **payload).value
-        end
-      end
-
-      # ensure calls to future.then use the thread pool
-      executor = pool
-      future.singleton_class.define_method :then do |&block|
-        future.then_on(executor, &block)
-      end
-
-      future
-    end
-
-    private
-
-    # Thread pool used for asynchronous operations
-    # @rbs return: Concurrent::FixedThreadPool
-    attr_reader :pool
-
-    # Starts the shutdown handler thread
-    # @rbs return: void
-    def start_shutdown_handler
-      return if @shutdown.true?
-
-      @shutdown_queue = Queue.new
-      @shutdown_completed = Concurrent::Event.new
-      @shutdown_thread = Thread.new do
-        catch :shutdown do
-          loop do
-            signal = @shutdown_queue.pop # blocks until something is available
-            throw :shutdown if @shutdown_queue.closed?
-
-            stop # initiate shutdown sequence
-
-            # Re-raise the signal to let the process terminate
-            if signal
-              # Remove our trap handler before re-raising
-              trap signal, "DEFAULT"
-              Process.kill signal, Process.pid
-            end
-          rescue ThreadError, ClosedQueueError
-            break # queue was closed, exit gracefully
-          end
-        end
-        @shutdown_completed.set
-      end
-    end
-
-    # Enables safe shutdown on process exit by trapping specified signals
-    # @rbs on: Array[String] -- signals to trap
-    # @rbs return: void
-    def enable_safe_shutdown(on:)
-      at_exit { stop }
-      on.each do |signal|
-        trap signal do
-          @shutdown_queue.push signal unless @shutdown.true?
-        rescue
-          nil
+    # @rbs return: Message
+    def publish(topic, priority: 1, timeout: self.timeout, **payload)
+      synchronize do
+        raise QueueFullError, "Queue is at capacity! #{size}" if @queue.size >= size
+        Message.new(topic, timeout: timeout, **payload).tap do |message|
+          @queue.push message, priority
         end
       end
     end

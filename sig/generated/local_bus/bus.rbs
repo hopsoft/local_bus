@@ -6,18 +6,18 @@ class LocalBus
     include MonitorMixin
 
     # Constructor
-    # @note Creates a new Bus instance with specified concurrency
-    # @rbs concurrency: Integer -- maximum number of concurrent tasks (default: Concurrent.processor_count)
+    # @note Creates a new Bus instance with specified max concurrency (i.e. number of tasks that can run in parallel)
+    # @rbs concurrency: Integer -- maximum number of concurrent tasks (default: Etc.nprocessors)
     def initialize: (?concurrency: Integer) -> untyped
 
     # Maximum number of concurrent tasks that can run in "parallel"
-    # @rbs return: Integer -- current concurrency value
+    # @rbs return: Integer
     def concurrency: () -> Integer
 
-    # Sets the concurrency
-    # @rbs concurrency: Integer -- max number of concurrent tasks that can run in "parallel"
+    # Sets the max concurrency
+    # @rbs value: Integer -- max number of concurrent tasks that can run in "parallel"
     # @rbs return: Integer -- new concurrency value
-    def concurrency=: (untyped value) -> Integer
+    def concurrency=: (Integer value) -> Integer
 
     # Registered topics that have subscribers
     # @rbs return: Array[String] -- list of topic names
@@ -61,12 +61,18 @@ class LocalBus
     #
     # @note If the timeout is exceeded, the task will be cancelled before all subscribers have completed.
     #
-    # Check the Subscriber for any errors.
+    # Check individual Subscribers for possible errors.
     #
     # @rbs topic: String -- topic name
     # @rbs timeout: Float -- seconds to wait before cancelling (default: 300)
     # @rbs payload: Hash -- message payload
-    # @rbs return: Array[Subscriber] -- list of performed subscribers (empty if no subscribers)
-    def publish: (String topic, ?timeout: Float, **untyped payload) -> Array[Subscriber]
+    # @rbs return: Promise -- promise responsible for processing the message
+    def publish: (String topic, ?timeout: Float, **untyped payload) -> Promise
+
+    private
+
+    # Publishes a message to the queue
+    # @rbs return: Promise -- promise responsible for processing the message
+    def publish_message: (untyped message) -> Promise
   end
 end

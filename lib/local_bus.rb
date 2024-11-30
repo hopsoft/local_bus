@@ -6,13 +6,15 @@ require "zeitwerk"
 loader = Zeitwerk::Loader.for_gem
 loader.setup
 
+require "algorithms"
 require "async"
 require "async/barrier"
 require "async/semaphore"
-require "concurrent-ruby"
+require "etc"
 require "monitor"
 require "securerandom"
 require "singleton"
+require "timers"
 
 class LocalBus
   include Singleton

@@ -17,49 +17,43 @@ class LocalBus
   class Station
     include MonitorMixin
 
-    class TimeoutError < StandardError
+    class QueueFullError < StandardError
     end
-
-    # Default options for Concurrent::FixedThreadPool (can be overridden via the constructor)
-    # @see https://ruby-concurrency.github.io/concurrent-ruby/1.3.4/Concurrent/ThreadPoolExecutor.html
-    THREAD_POOL_OPTIONS: untyped
 
     # Constructor
     # @rbs bus: Bus -- local message bus (default: Bus.new)
-    # @rbs threads: Integer -- number of threads (default: Concurrent.processor_count)
-    # @rbs default_timeout: Float -- seconds to wait for a future to complete
-    # @rbs shutdown_timeout: Float -- seconds to wait for all futures to complete on process exit
-    # @rbs options: Hash[Symbol, untyped] -- Concurrent::FixedThreadPool options
+    # @rbs interval: Float -- queue polling interval in seconds (default: 0.01)
+    # @rbs size: Integer -- max queue size (default: 5_000)
+    # @rbs timeout: Float -- seconds to wait for a published message to complete
     # @rbs return: void
-    def initialize: (?bus: Bus, ?threads: Integer, ?default_timeout: Float, ?shutdown_timeout: Float, **untyped options) -> void
+    def initialize: (?bus: Bus, ?interval: Float, ?size: Integer, ?timeout: Float) -> void
 
     # Bus instance
     # @rbs return: Bus
     attr_reader bus: untyped
 
-    # Number of threads used to process messages
+    # Queue polling interval in seconds
+    # @rbs return: Float
+    attr_reader interval: untyped
+
+    # Max queue size
     # @rbs return: Integer
-    attr_reader threads: untyped
+    attr_reader size: untyped
 
     # Default timeout for message processing (in seconds)
     # @rbs return: Float
-    attr_reader default_timeout: untyped
+    attr_reader timeout: untyped
 
-    # Timeout for graceful shutdown (in seconds)
-    # @rbs return: Float
-    attr_reader shutdown_timeout: untyped
-
-    # Starts the broker
-    # @rbs options: Hash[Symbol, untyped] -- Concurrent::FixedThreadPool options
+    # Starts the station
+    # @rbs interval: Float -- queue polling interval in seconds (default: 0.01)
     # @rbs return: void
-    def start: (**untyped options) -> void
+    def start: (?interval: Float) -> void
 
-    # Stops the broker
-    # @rbs timeout: Float -- seconds to wait for all futures to complete
+    # Stops the station
     # @rbs return: void
-    def stop: (?timeout: Float) -> void
+    def stop: () -> void
 
-    # Indicates if the broker is running
+    # Indicates if the station is running
     # @rbs return: bool
     def running?: () -> bool
 
@@ -80,32 +74,13 @@ class LocalBus
     # @rbs return: self
     def unsubscribe_all: (String topic) -> self
 
-    # Publishes a message to Bus on a separate thread keeping the main thread free for additional work.
-    #
-    # @note This allows you to publish messages when performing operations like handling web requests
-    #       without blocking the main thread and slowing down the response.
-    #
-    # @see https://ruby-concurrency.github.io/concurrent-ruby/1.3.4/Concurrent/Promises/Future.html
+    # Publishes a message to the queue
     #
     # @rbs topic: String | Symbol -- topic name
+    # @rbs priority: Integer -- priority of the message, higher number == higher priority (default: 1)
     # @rbs timeout: Float -- seconds to wait before cancelling
     # @rbs payload: Hash[Symbol, untyped] -- message payload
-    # @rbs return: Concurrent::Promises::Future
-    def publish: (String | Symbol topic, ?timeout: Float, **untyped payload) -> Concurrent::Promises::Future
-
-    private
-
-    # Thread pool used for asynchronous operations
-    # @rbs return: Concurrent::FixedThreadPool
-    attr_reader pool: untyped
-
-    # Starts the shutdown handler thread
-    # @rbs return: void
-    def start_shutdown_handler: () -> void
-
-    # Enables safe shutdown on process exit by trapping specified signals
-    # @rbs on: Array[String] -- signals to trap
-    # @rbs return: void
-    def enable_safe_shutdown: (on: Array[String]) -> void
+    # @rbs return: Message
+    def publish: (String | Symbol topic, ?priority: Integer, ?timeout: Float, **untyped payload) -> Message
   end
 end

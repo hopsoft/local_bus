@@ -1,20 +1,31 @@
-# Generated from lib/local_bus/pledge.rb with RBS::Inline
+# frozen_string_literal: true
+
+# rbs_inline: enabled
 
 class LocalBus
-  # A promise-like object that wraps an Async::Barrier and a list of Subscribers.
+  # Wraps an Async::Barrier and a list of Subscribers.
   # Delegates #wait to the barrier and all other methods to the subscriber list.
-  class Pledge
+  class Promise
     # Constructor
     # @rbs barrier: Async::Barrier -- barrier used to wait for all tasks
     # @rbs subscribers: Array[Subscriber]
-    def initialize: (Async::Barrier barrier, *untyped subscribers) -> untyped
+    def initialize(barrier, *subscribers)
+      @barrier = barrier
+      @subscribers = subscribers
+    end
 
     # Blocks and waits for the barrier... all subscribers to complete
     # @rbs return: void
-    def wait: () -> void
+    def wait
+      @barrier.wait
+      self
+    end
 
     # Blocks and waits then returns all subscribers
     # @rbs return: Array[Subscriber]
-    def value: () -> Array[Subscriber]
+    def value
+      wait
+      @subscribers
+    end
   end
 end

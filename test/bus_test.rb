@@ -50,7 +50,7 @@ class LocalBus
     def test_publish
       bus = Bus.new
 
-      bus.max_concurrency.times do |num|
+      bus.concurrency.times do |num|
         bus.subscribe(@topic) do |_message|
           sleep @latency
           num
@@ -63,19 +63,19 @@ class LocalBus
       subscribers = result.value
 
       assert result.value.all? { _1 in LocalBus::Subscriber }
-      assert_equal (0..bus.max_concurrency - 1).to_a, subscribers.map(&:value)
+      assert_equal (0..bus.concurrency - 1).to_a, subscribers.map(&:value)
       assert (@latency...(@latency * 1.25)).cover?(Time.now - start)
     end
 
     def test_publish_with_callable_object
       bus = Bus.new
-      bus.max_concurrency.times do |num|
+      bus.concurrency.times do |num|
         bus.subscribe @topic, callable: TestCallable.new
       end
 
       subscribers = bus.publish(@topic, number: rand(10)).value
 
-      assert_equal bus.max_concurrency, subscribers.size
+      assert_equal bus.concurrency, subscribers.size
       assert subscribers.all? { _1 in Subscriber }
       assert subscribers.map(&:value).all? { _1[:number] in Integer }
     end
@@ -96,7 +96,7 @@ class LocalBus
     def test_subscriber_errors
       bus = Bus.new
 
-      bus.max_concurrency.times do |num|
+      bus.concurrency.times do |num|
         bus.subscribe @topic do |_message|
           raise "Intentional Error!"
         end
@@ -106,8 +106,8 @@ class LocalBus
       promise.wait
       subscribers = promise.value
 
-      assert_equal bus.max_concurrency, bus.subscriptions[@topic].size
-      assert_equal bus.max_concurrency, subscribers.size
+      assert_equal bus.concurrency, bus.subscriptions[@topic].size
+      assert_equal bus.concurrency, subscribers.size
       assert subscribers.all? { _1.error in Subscriber::Error }
       assert subscribers.all? { _1.error.message.start_with? "Invocation failed!" }
       assert subscribers.all? { _1.error.cause.message.start_with? "Intentional Error!" }
@@ -138,7 +138,7 @@ class LocalBus
     def test_timeout
       bus = Bus.new
 
-      count = bus.max_concurrency * 2
+      count = bus.concurrency * 2
       count.times do |index|
         bus.subscribe(@topic) do |_message|
           sleep @latency
