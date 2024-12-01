@@ -25,10 +25,10 @@ class LocalBus
     # @rbs return: Hash[Symbol, untyped]
     attr_reader :metadata
 
-    # Promise processing the message
-    # @note May be nil if processing hasn't started (e.g. it was published via Station)
-    # @rbs return: Promise?
-    attr_accessor :promise
+    # Publication representing the Async barrier and subscribers handling the message
+    # @note May be nil if processing hasn't happened yet (e.g. it was published via Station)
+    # @rbs return: Publication?
+    attr_accessor :publication
 
     # Unique identifier for the message
     # @rbs return: String
@@ -70,14 +70,12 @@ class LocalBus
     # @rbs interval: Float -- time to wait between checks (default: 0.1)
     # @rbs return: void
     def wait(interval: 0.1)
-      @timers ||= Timers::Group.new.tap do |t|
-        t.every(interval) {}
-        loop do
-          t.wait
-          break if promise
-        end
+      @timers ||= Timers::Group.new.tap { _1.every(interval) {} }
+      loop do
+        break if publication
+        @timers.wait
       end
-      promise.wait
+      publication&.wait
     ensure
       @timers&.cancel
       @timers = nil
@@ -87,7 +85,7 @@ class LocalBus
     # @rbs return: Array[Subscriber]
     def subscribers
       wait
-      promise.value
+      publication.subscribers
     end
 
     # Converts the message to a hash

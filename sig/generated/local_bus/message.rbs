@@ -14,10 +14,10 @@ class LocalBus
     # @rbs return: Hash[Symbol, untyped]
     attr_reader metadata: untyped
 
-    # Promise processing the message
-    # @note May be nil if processing hasn't started (e.g. it was published via Station)
-    # @rbs return: Promise?
-    attr_accessor promise: untyped
+    # Publication representing the Async barrier and subscribers handling the message
+    # @note May be nil if processing hasn't happened yet (e.g. it was published via Station)
+    # @rbs return: Publication?
+    attr_accessor publication: untyped
 
     # Unique identifier for the message
     # @rbs return: String
@@ -50,7 +50,7 @@ class LocalBus
 
     # Blocks and waits for the message process then returns all subscribers
     # @rbs return: Array[Subscriber]
-    def value: () -> Array[Subscriber]
+    def subscribers: () -> Array[Subscriber]
 
     # Allows pattern matching on message attributes
     # @rbs keys: Array[Symbol] -- keys to extract from the message

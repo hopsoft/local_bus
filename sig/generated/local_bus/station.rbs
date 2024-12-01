@@ -23,10 +23,11 @@ class LocalBus
     # Constructor
     # @rbs bus: Bus -- local message bus (default: Bus.new)
     # @rbs interval: Float -- queue polling interval in seconds (default: 0.01)
-    # @rbs size: Integer -- max queue size (default: 5_000)
+    # @rbs size: Integer -- max queue size (default: 10_000)
+    # @rbs threads: Integer -- number of threads to use (default: Etc.nprocessors)
     # @rbs timeout: Float -- seconds to wait for a published message to complete
     # @rbs return: void
-    def initialize: (?bus: Bus, ?interval: Float, ?size: Integer, ?timeout: Float) -> void
+    def initialize: (?bus: Bus, ?interval: Float, ?size: Integer, ?threads: Integer, ?timeout: Float) -> void
 
     # Bus instance
     # @rbs return: Bus
@@ -40,18 +41,25 @@ class LocalBus
     # @rbs return: Integer
     attr_reader size: untyped
 
+    # Number of threads to use
+    # @rbs return: Integer
+    attr_reader threads: untyped
+
     # Default timeout for message processing (in seconds)
     # @rbs return: Float
     attr_reader timeout: untyped
 
     # Starts the station
     # @rbs interval: Float -- queue polling interval in seconds (default: 0.01)
+    # @rbs threads: Integer -- number of threads to use (default: self.threads)
     # @rbs return: void
-    def start: (?interval: Float) -> void
+    def start: (?interval: Float, ?threads: Integer) -> void
 
     # Stops the station
     # @rbs return: void
     def stop: () -> void
+
+    def stopping?: () -> untyped
 
     # Indicates if the station is running
     # @rbs return: bool

@@ -64,15 +64,15 @@ class LocalBus
     # Check individual Subscribers for possible errors.
     #
     # @rbs topic: String -- topic name
-    # @rbs timeout: Float -- seconds to wait before cancelling (default: 300)
+    # @rbs timeout: Float -- seconds to wait before cancelling (default: 60)
     # @rbs payload: Hash -- message payload
-    # @rbs return: Promise -- promise responsible for processing the message
-    def publish: (String topic, ?timeout: Float, **untyped payload) -> Promise
+    # @rbs return: Publication -- promise responsible for processing the message
+    def publish: (String topic, ?timeout: Float, **untyped payload) -> Publication
 
     private
 
     # Publishes a message to the queue
-    # @rbs return: Promise -- promise responsible for processing the message
-    def publish_message: (untyped message) -> Promise
+    # @rbs return: Publication -- promise responsible for processing the message
+    def publish_message: (untyped message) -> Publication
   end
 end

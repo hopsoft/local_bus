@@ -27,14 +27,16 @@ class LocalBus
     # Constructor
     # @rbs bus: Bus -- local message bus (default: Bus.new)
     # @rbs interval: Float -- queue polling interval in seconds (default: 0.01)
-    # @rbs size: Integer -- max queue size (default: 5_000)
+    # @rbs size: Integer -- max queue size (default: 10_000)
+    # @rbs threads: Integer -- number of threads to use (default: Etc.nprocessors)
     # @rbs timeout: Float -- seconds to wait for a published message to complete
     # @rbs return: void
-    def initialize(bus: Bus.new, interval: 0.01, size: 5_000, timeout: 300)
+    def initialize(bus: Bus.new, interval: 0.01, size: 10_000, threads: Etc.nprocessors, timeout: 60)
       super()
       @bus = bus
       @interval = interval.to_f
       @size = size.to_i
+      @threads = threads.to_i
       @timeout = timeout.to_f
       @queue = Containers::PriorityQueue.new
       start
@@ -52,23 +54,44 @@ class LocalBus
     # @rbs return: Integer
     attr_reader :size
 
+    # Number of threads to use
+    # @rbs return: Integer
+    attr_reader :threads
+
     # Default timeout for message processing (in seconds)
     # @rbs return: Float
     attr_reader :timeout
 
     # Starts the station
     # @rbs interval: Float -- queue polling interval in seconds (default: 0.01)
+    # @rbs threads: Integer -- number of threads to use (default: self.threads)
     # @rbs return: void
-    def start(interval: self.interval)
+    def start(interval: self.interval, threads: self.threads)
       synchronize do
-        @thread ||= Thread.new do
-          timers = Timers::Group.new
-          timers.every interval do
-            message = @queue.pop
-            bus.send :publish_message, message if message
+        return if running? || stopping?
+
+        # Supervisor thread that orchestrates the worker pool
+        @thread = Thread.new do
+          size = (threads >= 2) ? threads - 1 : 1
+          pool = Async::WorkerPool.new(size: size)
+
+          threads.times do
+            pool.call -> do
+              timers = Timers::Group.new
+              timers.every interval do
+                bus.send :publish_message, @queue.pop unless @queue.empty?
+              end
+
+              loop do
+                break if stopping?
+                timers.wait
+              end
+
+              timers.cancel
+            end
           end
-          Thread.current[:timers] = timers
-          loop { timers.wait }
+
+          Thread.current[:pool] = pool
         end
       end
     end
@@ -78,10 +101,18 @@ class LocalBus
     def stop
       synchronize do
         return unless running?
-        @thread[:timers]&.cancel
-        @thread.kill
-        @thread = nil
+        return if stopping?
+        @stopping = true
       end
+      @thread[:pool]&.close
+      @thread&.join
+    ensure
+      @stopping = false
+      @thread = nil
+    end
+
+    def stopping?
+      synchronize { !!@stopping }
     end
 
     # Indicates if the station is running
