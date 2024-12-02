@@ -269,7 +269,8 @@ The configured `concurrency` limits how many operations can run at once.
 bus = LocalBus::Bus.new(concurrency: 10)
 ```
 
-> **Note**: When the max concurrency limit is reached, new publish operations will wait until a slot becomes available.
+> [!NOTE]
+> When the max concurrency limit is reached, new publish operations will wait until a slot becomes available.
 > This helps to ensure we don't over utilize system resources.
 
 #### Station
@@ -351,7 +352,8 @@ end
 The Station delays process exit in an attempt to flush the queue and avoid dropped messages.
 This delay can be configured via the `:flush_delay` option in the constructor (default: 1).
 
-> **Important**: Flushing makes a "best effort" to process all messages at exit, but it's not guaranteed.
+> [!IMPORTANT]
+> Flushing makes a "best effort" to process all messages at exit, but it's not guaranteed.
 > Factor for potential message loss when designing your system.
 > For example, idempotency _i.e. messages that can be re-published without unintended side effects_.
 
