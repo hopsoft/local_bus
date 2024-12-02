@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-exec "bundle exec tocer upsert  --root=. #{ARGV.join(" ")}".strip
+system "gem install tocer" if `which tocer`.strip.empty?
+exec "tocer upsert  --root=. #{ARGV.join(" ")}".strip

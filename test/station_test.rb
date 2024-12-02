@@ -141,5 +141,56 @@ class LocalBus
       assert subscribers.last.error.message.start_with? "Timeout expired before invocation!"
       assert subscribers.last.error.cause.is_a? Async::TimeoutError
     end
+
+    def test_publish_with_priority
+      station = Station.new(threads: 1)
+      station.stop # stop the queue so we can add messages now and process later
+
+      index = 0
+      station.subscribe("default") { index += 1 }
+      station.subscribe("important") { index += 1 }
+      station.subscribe("critical") { index += 1 }
+
+      # note the order of publications
+      default = station.publish("default")
+      important = station.publish("important", priority: 5)
+      critical = station.publish("critical", priority: 10)
+
+      station.start
+      default.wait # only need to wait for the lowest priority as higher priority messages will process first
+
+      default_subscriber = default.subscribers.first
+      important_subscriber = important.subscribers.first
+      critical_subscriber = critical.subscribers.first
+
+      assert_equal 1, critical_subscriber.value
+      assert critical_subscriber.metadata[:finished_at] < important_subscriber.metadata[:finished_at]
+
+      assert_equal 2, important_subscriber.value
+      assert important_subscriber.metadata[:finished_at] < default_subscriber.metadata[:finished_at]
+
+      assert_equal 3, default_subscriber.value
+    end
+
+    def test_stop_with_unprocessed_messages
+      station = Station.new
+
+      30.times do |i|
+        station.bus.concurrency.times do
+          station.subscribe("topic-#{i}") { sleep 1 }
+        end
+        station.publish("topic-#{i}")
+      end
+
+      sleep 2 # given the above setup, allow 2/3 of the messages to process before stopping
+      station.stop
+
+      assert_equal 10, station.pending
+
+      # resume processing
+      station.start
+      sleep 1
+      assert_equal 0, station.pending
+    end
   end
 end

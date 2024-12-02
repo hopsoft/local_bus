@@ -120,6 +120,12 @@ class LocalBus
       synchronize { !!@pool }
     end
 
+    # The number of pending unprocessed messages
+    # @rbs return: Integer
+    def pending
+      synchronize { @queue.size }
+    end
+
     # Subscribe to a topic
     # @rbs topic: String -- topic name
     # @rbs callable: (Message) -> untyped -- callable that will process messages published to the topic
@@ -154,11 +160,16 @@ class LocalBus
     # @rbs payload: Hash[Symbol, untyped] -- message payload
     # @rbs return: Message
     def publish(topic, priority: 1, timeout: self.timeout, **payload)
+      publish_message Message.new(topic, timeout: timeout, **payload), priority: priority
+    end
+
+    # Publishes a message to the queue
+    # @rbs message: Message -- message to publish
+    # @rbs return: Message
+    def publish_message(message, priority: 1)
       synchronize do
         raise QueueFullError, "Queue is at capacity! #{size}" if @queue.size >= size
-        Message.new(topic, timeout: timeout, **payload).tap do |message|
-          @queue.push message, priority
-        end
+        @queue.push message, priority
       end
     end
   end

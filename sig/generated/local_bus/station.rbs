@@ -63,6 +63,10 @@ class LocalBus
     # @rbs return: bool
     def running?: () -> bool
 
+    # The number of pending unprocessed messages
+    # @rbs return: Integer
+    def pending: () -> Integer
+
     # Subscribe to a topic
     # @rbs topic: String -- topic name
     # @rbs callable: (Message) -> untyped -- callable that will process messages published to the topic
@@ -88,5 +92,10 @@ class LocalBus
     # @rbs payload: Hash[Symbol, untyped] -- message payload
     # @rbs return: Message
     def publish: (String | Symbol topic, ?priority: Integer, ?timeout: Float, **untyped payload) -> Message
+
+    # Publishes a message to the queue
+    # @rbs message: Message -- message to publish
+    # @rbs return: Message
+    def publish_message: (Message message, ?priority: untyped) -> Message
   end
 end

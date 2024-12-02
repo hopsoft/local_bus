@@ -1,6 +1,6 @@
 <p align="center">
   <a href="http://blog.codinghorror.com/the-best-code-is-no-code-at-all/">
-    <img alt="Lines of Code" src="https://img.shields.io/badge/loc-328-47d299.svg" />
+    <img alt="Lines of Code" src="https://img.shields.io/badge/loc-341-47d299.svg" />
   </a>
   <a href="https://rubygems.org/gems/local_bus">
     <img alt="GEM Version" src="https://img.shields.io/gem/v/local_bus">
@@ -30,23 +30,24 @@ LocalBus is a lightweight pub/sub system for Ruby that helps organize and simpli
 
 ## Table of Contents
 
-- [Why LocalBus?](#why-localbus)
-- [Installation](#installation)
-- [Quick Start](#quick-start)
-  - [Interfaces](#interfaces)
-  - [Bus (immediate processing)](#bus-immediate-processing)
-  - [Station (background processing)](#station-background-processing)
-- [Advanced Usage & Considerations](#advanced-usage--considerations)
-  - [Concurrency Controls](#concurrency-controls)
-    - [Bus Interface (Async)](#bus-interface-async)
-    - [Station Interface (Thread Pool)](#station-interface-thread-pool)
-  - [Error Handling & Recovery](#error-handling--recovery)
-  - [Memory Considerations](#memory-considerations)
-  - [Blocking Operations](#blocking-operations)
-  - [Shutdown & Cleanup](#shutdown--cleanup)
-  - [Limitations](#limitations)
-- [See Also](#see-also)
-- [Sponsors](#sponsors)
+  - [Why LocalBus?](#why-localbus)
+  - [Installation](#installation)
+  - [Quick Start](#quick-start)
+    - [Interfaces](#interfaces)
+    - [Bus (immediate processing)](#bus-immediate-processing)
+    - [Station (background processing)](#station-background-processing)
+  - [Advanced Usage & Considerations](#advanced-usage--considerations)
+    - [Concurrency Controls](#concurrency-controls)
+      - [Bus Interface](#bus-interface)
+      - [Station Interface](#station-interface)
+        - [Message Priority](#message-priority)
+    - [Error Handling & Recovery](#error-handling--recovery)
+    - [Memory Considerations](#memory-considerations)
+    - [Blocking Operations](#blocking-operations)
+    - [Shutdown & Cleanup](#shutdown--cleanup)
+    - [Limitations](#limitations)
+  - [See Also](#see-also)
+  - [Sponsors](#sponsors)
 
 <!-- Tocer[finish]: Auto-generated, don't remove. -->
 
@@ -225,7 +226,7 @@ Messages with a higher priority are processed before lower priority messaages.
 station = LocalBus.instance.station
 station.publish("critical", priority: 10) # processed first
 station.publish("important", priority: 5) # processed next
-station.publish("low")                    # processed last
+station.publish("default")                # processed last
 ```
 
 ### Error Handling & Recovery

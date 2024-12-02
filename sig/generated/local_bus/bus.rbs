@@ -69,10 +69,9 @@ class LocalBus
     # @rbs return: Message
     def publish: (String topic, ?timeout: Float, **untyped payload) -> Message
 
-    private
-
     # Publishes a message to the queue
+    # @rbs message: Message -- message to publish
     # @rbs return: Message
-    def publish_message: (untyped message) -> Message
+    def publish_message: (Message message) -> Message
   end
 end

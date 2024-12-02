@@ -39,6 +39,5 @@ Gem::Specification.new do |s|
   s.add_development_dependency "rake"
   s.add_development_dependency "rbs-inline"
   s.add_development_dependency "standard"
-  s.add_development_dependency "tocer"
   s.add_development_dependency "yard"
 end

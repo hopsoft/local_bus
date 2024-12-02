@@ -114,9 +114,8 @@ class LocalBus
       publish_message Message.new(topic, timeout: timeout.to_f, **payload)
     end
 
-    private
-
     # Publishes a message to the queue
+    # @rbs message: Message -- message to publish
     # @rbs return: Message
     def publish_message(message)
       barrier = Async::Barrier.new
