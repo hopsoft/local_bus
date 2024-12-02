@@ -38,7 +38,7 @@ Even within a single process, this pattern offers powerful benefits:
     - [Background Processing](#background-processing)
     - [Decoupled Microservices Communication](#decoupled-microservices-communication)
   - [Installation](#installation)
-  - [Quick Start](#quick-start)
+  - [Usage](#usage)
     - [Bus _(immediate processing)_](#bus-_immediate-processing_)
     - [Station _(background processing)_](#station-_background-processing_)
   - [Advanced Usage](#advanced-usage)
@@ -142,7 +142,7 @@ end
 bundle add local_bus
 ```
 
-## Quick Start
+## Usage
 
 - **Bus**: Single-threaded, immediate message delivery using Socketry `Async` with non-blocking I/O operations
 - **Station**: Multi-threaded message queuing powered by a thread pool, processing messages through the Bus without blocking the main thread
