@@ -1,12 +1,14 @@
 = LocalBus
 :doctype: article
 :toc:
+:toc-placement: preamble
 :icons: font
 :source-highlighter: highlight.js
 :experimental:
 :description: A lightweight pub/sub system for Ruby that helps organize and simplify intra-process communication.
 :keywords: Ruby, pub/sub, message bus, event bus, async, concurrency
 
+[preamble]
 LocalBus is a lightweight pub/sub system for Ruby that helps organize and simplify intra-process communication.
 
 image:https://img.shields.io/badge/loc-341-47d299.svg[Lines of Code, link="http://blog.codinghorror.com/the-best-code-is-no-code-at-all/"]
@@ -40,14 +42,246 @@ bundle add local_bus
 
 == Quick Start
 
-=== Interfaces
-
 * *Bus*: Single-threaded, immediate message delivery using Socketry `Async` with non-blocking I/O operations
 * *Station*: Multi-threaded message queuing powered by a thread pool, processing messages through the Bus without blocking the main thread
 
 === Bus _(immediate processing)_
 
 Best for work required by the current operation.
+
+[source,ruby]
+----
+bus = LocalBus::Bus.new # ... or LocalBus.instance.bus
+
+# register a subscriber
+bus.subscribe "user.created" do |message|
+  # business logic (e.g. API calls, database queries, disk operations, etc.)
+end
+
+message = bus.publish("user.created", user_id: 123)
+
+message.wait        # blocks until all subscribers complete
+message.subscribers # waits and returns the subscribers
+#=> [#<LocalBus::Subscriber:0x000000012bbb79a8 ...>]
+----
+
+Subscribe with an explicit `callable`.
+
+[source,ruby]
+----
+callable = ->(message) do
+  # business logic (e.g. API calls, database queries, disk operations, etc.)
+  "It worked!"
+end
+LocalBus.instance.bus.subscribe "user.created", callable: callable
+
+message = LocalBus.instance.bus.publish("user.created", user_id: 123)
+message.subscribers
+#=> [#<LocalBus::Subscriber:0x0000000126b7cf38 ...>]
+
+message.subscribers.first.value
+#=> "It worked!"
+
+# subscribe with any object that responds to #call
+class UserCreatedCallable
+  def call(message)
+    # business logic (e.g. API calls, database queries, disk operations, etc.)
+    "It worked!"
+  end
+end
+
+LocalBus.instance.bus.subscribe "user.created", callable: UserCreatedCallable.new
+message = LocalBus.instance.bus.publish("user.created", user_id: 123)
+message.subscribers
+#=> [#<LocalBus::Subscriber:0x0000000126b7cf38 ...>]
+
+# access subscriber (callable) values
+message.subscribers.first.value
+#=> "It worked!"
+----
+
+=== Station _(background processing)_
+
+Best for work not required by the current operation. _i.e. it can be executed later_
+
+[source,ruby]
+----
+station = LocalBus::Station.new # ... or LocalBus.instance.station
+
+station.subscribe "email.welcome" do |message|
+  # business logic (e.g. API calls, database queries, disk operations, etc.)
+  "It worked!"
+end
+
+message = station.publish("email.welcome", user_id: 123)
+
+message.wait        # blocks until all subscribers complete
+message.subscribers # blocks and waits until all subscribers complete and returns the subscribers
+#=> [#<LocalBus::Subscriber:0x00000001253156e8 ...>]
+
+message.subscribers.first.value
+#=> "It worked!"
+----
+
+Subscribe with an explicit `callable`.
+
+[source,ruby]
+----
+callable = ->(message) do
+  # business logic (e.g. API calls, database queries, disk operations, etc.)
+  "It worked!"
+end
+LocalBus.instance.station.subscribe "email.welcome", callable: callable
+
+message = LocalBus.instance.station.publish("email.welcome", user_id: 123)
+message.subscribers
+#=> [#<LocalBus::Subscriber:0x0000000126b7cf38 ...>]
+
+message.subscribers.first.value
+#=> "It worked!"
+
+# you can use any object that responds to #call
+class WelcomeEmailCallable
+  def call(message)
+    # business logic (e.g. API calls, database queries, disk operations, etc.)
+    "It worked!"
+  end
+end
+
+LocalBus.instance.station.subscribe "email.welcome", callable: WelcomeEmailCallable.new
+message = LocalBus.instance.station.publish("email.welcome", user_id: 123)
+message.subscribers
+#=> [#<LocalBus::Subscriber:0x0000000126b7cf38 ...>]
+
+message.subscribers.first.value
+#=> "It worked!"
+----
+
+== Advanced Usage & Considerations
+
+=== Concurrency Controls
+
+==== Bus
+
+The Bus uses Async's Semaphore to limit resource consumption.
+The configured `concurrency` limits how many operations can run at once.
+
+[source,ruby]
+----
+# Configure concurrency limits for the Bus (default: Etc.nprocessors)
+bus = LocalBus::Bus.new(concurrency: 10)
+----
+
+[NOTE]
+====
+When the max concurrency limit is reached, new publish operations will wait until a slot becomes available.
+This helps to ensure we don't over utilize system resources.
+====
+
+==== Station
+
+The Station uses a thread pool for multi-threaded message processing.
+
+[source,ruby]
+----
+# Configure the pool size for the Station
+station = LocalBus::Station.new(
+  size: 5_000, # max queued messages allowed (default: 10_000)
+  threads: 10, # max number of threads (default: Etc.nprocessors)
+)
+----
+
+===== Message Priority
+
+The Station supports assigning a priority to each message.
+Messages with a higher priority are processed before lower priority messaages.
+
+[source,ruby]
+----
+station = LocalBus.instance.station
+station.publish("critical", priority: 10) # processed first
+station.publish("important", priority: 5) # processed next
+station.publish("default")                # processed last
+----
+
+=== Error Handling & Recovery
+
+Both Bus and Station implement error boundaries to prevent individual subscriber failures from affecting other subscribers:
+
+[source,ruby]
+----
+bus = LocalBus::Bus.new
+
+bus.subscribe "user.created" do |message|
+  raise "Something went wrong!"
+  # never reached (business logic...)
+end
+
+bus.subscribe "user.created" do |message|
+  # This still executes despite the error in the subscriber above
+  # business logic (e.g. API calls, database queries, disk operations, etc.)
+end
+
+# The publish operation completes with partial success
+message = bus.publish("user.created", user_id: 123)
+errored_subscribers = message.subscribers.select(&:errored?)
+#=> [#<LocalBus::Subscriber:0x000000011ebbcaf0 ...>]
+
+errored_subscribers.first.error
+#=> #<LocalBus::Subscriber::Error: Invocation failed! Something went wrong!>
+----
+
+=== Memory Considerations
+
+Messages are held in memory until all subscribers have completed.
+Consider this when publishing large payloads or during high load scenarios.
+
+[source,ruby]
+----
+# memory-efficient publishing of large datasets
+large_dataset.each_slice(100) do |batch|
+  message = station.publish("data.process", items: batch)
+  message.wait # wait before processing more messages
+end
+----
+
+=== Blocking Operations
+
+The Bus uses non-blocking I/O but can still be blocked by CPU-intensive operations.
+
+[source,ruby]
+----
+# blocks the event loop
+bus.subscribe "cpu.intensive" do |message|
+  # CPU bound operation
+end
+----
+
+=== Shutdown & Cleanup
+
+The Station delays process exit in an attempt to flush the queue and avoid dropped messages.
+This delay can be configured via the `:flush_delay` option in the constructor (default: 1).
+
+[IMPORTANT]
+====
+Flushing makes a "best effort" to process all messages at exit, but it's not guaranteed.
+Factor for potential message loss when designing your system.
+For example, idempotency _i.e. messages that can be re-published without unintended side effects_.
+====
+
+=== Limitations
+
+* The Bus is single-threaded - long-running or CPU-bound subscribers can impact latency
+* The Station may drop messages at process exit _(messages are not persisted between process restarts)_
+* No distributed support - the message broker is limited to single process _(intra-process)_
+* Large message payloads may impact memory usage, especially under high load
+* No built-in retry mechanism for failed subscribers _(subscribers expose an error property, but you'll need to check and handle such errors)_
+
+Consider these limitations when designing your system architecture.
+
+== Interfaces
+
+=== Bus
 
 [cols="2,1,2,3"]
 |===
@@ -104,65 +338,12 @@ Best for work required by the current operation.
 |Publishes message to topic with optional timeout and payload
 
 |`publish_message`
-|`message: Message`
+|`message`, `:priority` => `1`
 |`Message`
-|Publishes a pre-constructed Message object
+|Publishes a pre-constructed Message object to queue
 |===
 
-[source,ruby]
-----
-bus = LocalBus::Bus.new # ... or LocalBus.instance.bus
-
-# register a subscriber
-bus.subscribe "user.created" do |message|
-  # business logic (e.g. API calls, database queries, disk operations, etc.)
-end
-
-message = bus.publish("user.created", user_id: 123)
-
-message.wait        # blocks until all subscribers complete
-message.subscribers # waits and returns the subscribers
-#=> [#<LocalBus::Subscriber:0x000000012bbb79a8 ...>]
-----
-
-Subscribe with an explicit `callable`.
-
-[source,ruby]
-----
-callable = ->(message) do
-  # business logic (e.g. API calls, database queries, disk operations, etc.)
-  "It worked!"
-end
-LocalBus.instance.bus.subscribe "user.created", callable: callable
-
-message = LocalBus.instance.bus.publish("user.created", user_id: 123)
-message.subscribers
-#=> [#<LocalBus::Subscriber:0x0000000126b7cf38 ...>]
-
-message.subscribers.first.value
-#=> "It worked!"
-
-# subscribe with any object that responds to #call
-class UserCreatedCallable
-  def call(message)
-    # business logic (e.g. API calls, database queries, disk operations, etc.)
-    "It worked!"
-  end
-end
-
-LocalBus.instance.bus.subscribe "user.created", callable: UserCreatedCallable.new
-message = LocalBus.instance.bus.publish("user.created", user_id: 123)
-message.subscribers
-#=> [#<LocalBus::Subscriber:0x0000000126b7cf38 ...>]
-
-# access subscriber (callable) values
-message.subscribers.first.value
-#=> "It worked!"
-----
-
-=== Station _(background processing)_
-
-Best for work not required by the current operation (i.e. can be executed later).
+=== Station
 
 [cols="2,1,2,3"]
 |===
@@ -244,180 +425,144 @@ Best for work not required by the current operation (i.e. can be executed later)
 |Publishes a pre-constructed Message object to queue
 |===
 
-[source,ruby]
-----
-station = LocalBus::Station.new # ... or LocalBus.instance.station
+=== Message
 
-station.subscribe "email.welcome" do |message|
-  # business logic (e.g. API calls, database queries, disk operations, etc.)
-  "It worked!"
-end
+[cols="2,1,2,3"]
+|===
+|Method |Arguments |Return Type |Description
 
-message = station.publish("email.welcome", user_id: 123)
+|`initialize`
+|`topic`, `:timeout` => `nil`, `**payload`
+|`Message`
+|Creates a new Message instance with the given topic and payload
 
-message.wait        # blocks until all subscribers complete
-message.subscribers # blocks and waits until all subscribers complete and returns the subscribers
-#=> [#<LocalBus::Subscriber:0x00000001253156e8 ...>]
+|`metadata`
+|
+|`Hash[Symbol, untyped]`
+|Returns message metadata
 
-message.subscribers.first.value
-#=> "It worked!"
-----
+|`id`
+|
+|`String`
+|Returns unique identifier for the message
 
-Subscribe with an explicit `callable`.
+|`topic`
+|
+|`String`
+|Returns message topic
 
-[source,ruby]
-----
-callable = ->(message) do
-  # business logic (e.g. API calls, database queries, disk operations, etc.)
-  "It worked!"
-end
-LocalBus.instance.station.subscribe "email.welcome", callable: callable
+|`payload`
+|
+|`Hash`
+|Returns message payload
 
-message = LocalBus.instance.station.publish("email.welcome", user_id: 123)
-message.subscribers
-#=> [#<LocalBus::Subscriber:0x0000000126b7cf38 ...>]
+|`created_at`
+|
+|`Time`
+|Returns time when message was created
 
-message.subscribers.first.value
-#=> "It worked!"
+|`thread_id`
+|
+|`Integer`
+|Returns ID of thread that created the message
 
-# you can use any object that responds to #call
-class WelcomeEmailCallable
-  def call(message)
-    # business logic (e.g. API calls, database queries, disk operations, etc.)
-    "It worked!"
-  end
-end
+|`timeout`
+|
+|`Float`
+|Returns timeout for message processing in seconds
 
-LocalBus.instance.station.subscribe "email.welcome", callable: WelcomeEmailCallable.new
-message = LocalBus.instance.station.publish("email.welcome", user_id: 123)
-message.subscribers
-#=> [#<LocalBus::Subscriber:0x0000000126b7cf38 ...>]
+|`wait`
+|`:interval` => `0.1`
+|`void`
+|Blocks and waits for message to process
 
-message.subscribers.first.value
-#=> "It worked!"
-----
+|`subscribers`
+|
+|`Array[Subscriber]`
+|Returns all subscribers after waiting for processing
 
-== Advanced Usage & Considerations
+|`to_h`
+|
+|`Hash[Symbol, untyped]`
+|Converts message to a hash (alias for metadata)
+|===
 
-=== Concurrency Controls
+=== Subscriber
 
-==== Bus Interface
+[cols="2,1,2,3"]
+|===
+|Method |Arguments |Return Type |Description
 
-The Bus interface uses Async's Semaphore to limit resource consumption.
-The configured `concurrency` limits how many operations can run at once.
+|`initialize`
+|`callable`, `message`
+|`Subscriber`
+|Creates a new Subscriber instance with a callable and message
 
-[source,ruby]
-----
-# Configure concurrency limits for the Bus (default: Etc.nprocessors)
-bus = LocalBus::Bus.new(concurrency: 10)
-----
+|`id`
+|
+|`Integer`
+|Returns unique identifier for the subscriber
 
-[NOTE]
-====
-When the max concurrency limit is reached, new publish operations will wait until a slot becomes available.
-This helps to ensure we don't over utilize system resources.
-====
+|`source_location`
+|
+|`Array[String, Integer]?`
+|Returns file and line number where callable was defined
 
-==== Station Interface
+|`callable`
+|
+|`#call`
+|Returns the callable object (Proc, lambda, etc.)
 
-The Station interface uses a thread pool for multi-threaded message processing.
+|`error`
+|
+|`Error?`
+|Returns error if subscriber failed (after performing)
 
-[source,ruby]
-----
-# Configure the pool size for the Station
-station = LocalBus::Station.new(
-  size: 5_000, # max queued messages allowed (default: 10_000)
-  threads: 10, # max number of threads (default: Etc.nprocessors)
-)
-----
+|`message`
+|
+|`Message`
+|Returns message for the subscriber to process
 
-===== Message Priority
+|`metadata`
+|
+|`Hash[Symbol, untyped]`
+|Returns metadata including timing, thread info, and message details
 
-The Station interface supports assigning a priority to each message.
-Messages with a higher priority are processed before lower priority messaages.
+|`value`
+|
+|`untyped`
+|Returns value returned by the callable (after performing)
 
-[source,ruby]
-----
-station = LocalBus.instance.station
-station.publish("critical", priority: 10) # processed first
-station.publish("important", priority: 5) # processed next
-station.publish("default")                # processed last
-----
+|`performed?`
+|
+|`bool`
+|Indicates if the subscriber has been performed
 
-=== Error Handling & Recovery
+|`pending?`
+|
+|`bool`
+|Indicates if the subscriber is pending/unperformed
 
-Both interfaces implement error boundaries to prevent individual subscriber failures from affecting other subscribers:
+|`errored?`
+|
+|`bool`
+|Indicates if the subscriber has errored
 
-[source,ruby]
-----
-bus = LocalBus::Bus.new
+|`perform`
+|
+|`void`
+|Performs the subscriber's callable
 
-bus.subscribe "user.created" do |message|
-  raise "Something went wrong!"
-  # never reached (business logic...)
-end
+|`timeout`
+|`cause`
+|`void`
+|Marks subscriber as timed out with given cause
 
-bus.subscribe "user.created" do |message|
-  # This still executes despite the error in the subscriber above
-  # business logic (e.g. API calls, database queries, disk operations, etc.)
-end
-
-# The publish operation completes with partial success
-message = bus.publish("user.created", user_id: 123)
-errored_subscribers = message.subscribers.select(&:errored?)
-#=> [#<LocalBus::Subscriber:0x000000011ebbcaf0 ...>]
-
-errored_subscribers.first.error
-#=> #<LocalBus::Subscriber::Error: Invocation failed! Something went wrong!>
-----
-
-=== Memory Considerations
-
-Messages are held in memory until all subscribers have completed.
-Consider this when publishing large payloads or during high load scenarios.
-
-[source,ruby]
-----
-# memory-efficient publishing of large datasets
-large_dataset.each_slice(100) do |batch|
-  message = station.publish("data.process", items: batch)
-  message.wait # wait before processing more messages
-end
-----
-
-=== Blocking Operations
-
-The Bus interface uses non-blocking I/O but can still be blocked by CPU-intensive operations.
-
-[source,ruby]
-----
-# blocks the event loop
-bus.subscribe "cpu.intensive" do |message|
-  # CPU bound operation
-end
-----
-
-=== Shutdown & Cleanup
-
-The Station delays process exit in an attempt to flush the queue and avoid dropped messages.
-This delay can be configured via the `:flush_delay` option in the constructor (default: 1).
-
-[IMPORTANT]
-====
-Flushing makes a "best effort" to process all messages at exit, but it's not guaranteed.
-Factor for potential message loss when designing your system.
-For example, idempotency _(i.e. messages that can be re-published without unintended side effects)_.
-====
-
-=== Limitations
-
-* The Bus interface is single-threaded - long-running or CPU-bound subscribers can impact latency
-* The Station interface may drop messages at process exit _(messages are not persisted between process restarts)_
-* No distributed support - the message broker is limited to single process _(intra-process)_
-* Large message payloads may impact memory usage, especially under high load
-* No built-in retry mechanism for failed subscribers _(subscribers expose an error property, but you'll need to check and handle such errors)_
-
-Consider these limitations when designing your system architecture.
+|`to_h`
+|
+|`Hash[Symbol, untyped]`
+|Returns the subscriber's data as a hash
+|===
 
 == See Also
 
