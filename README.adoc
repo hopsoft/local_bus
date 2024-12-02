@@ -10,7 +10,8 @@
 :keywords: Ruby, pub/sub, message bus, event bus, async, concurrency
 
 [discrete]
-== A lightweight single-process pub/sub system that enables clean, decoupled interactions.
+-== A lightweight single-process pub/sub system that enables clean, decoupled interactions.
+#A lightweight single-process pub/sub system that enables clean, decoupled interactions.
 
 image:https://img.shields.io/badge/loc-341-47d299.svg[Lines of Code, link="http://blog.codinghorror.com/the-best-code-is-no-code-at-all/"]
 image:https://img.shields.io/gem/v/local_bus[GEM Version, link="https://rubygems.org/gems/local_bus"]
@@ -36,7 +37,7 @@ Even within a single process, this pattern offers powerful benefits:
 
 == Installation
 
-[source,sh]
+[source,bash]
 ----
 bundle add local_bus
 ----
@@ -45,6 +46,17 @@ bundle add local_bus
 
 * *Bus*: Single-threaded, immediate message delivery using Socketry `Async` with non-blocking I/O operations
 * *Station*: Multi-threaded message queuing powered by a thread pool, processing messages through the Bus without blocking the main thread
+
+[TIP]
+====
+LocalBus provides a singleton instance where you can access the default Bus and Station:
+
+[source,ruby]
+----
+LocalBus.instance.bus     # access the default Bus
+LocalBus.instance.station # access the default Station
+----
+====
 
 === Bus _(immediate processing)_
 
@@ -284,7 +296,7 @@ Consider these limitations when designing your system architecture.
 
 === Bus
 
-[cols="2,1,2,3"]
+[cols="2,1,2,3", options="header"]
 |===
 |Method |Arguments |Return Type |Description
 
@@ -346,7 +358,7 @@ Consider these limitations when designing your system architecture.
 
 === Station
 
-[cols="2,1,2,3"]
+[cols="2,1,2,3", options="header"]
 |===
 |Method |Arguments |Return Type |Description
 
@@ -428,7 +440,7 @@ Consider these limitations when designing your system architecture.
 
 === Message
 
-[cols="2,1,2,3"]
+[cols="2,1,2,3", options="header"]
 |===
 |Method |Arguments |Return Type |Description
 
@@ -490,7 +502,7 @@ Consider these limitations when designing your system architecture.
 
 === Subscriber
 
-[cols="2,1,2,3"]
+[cols="2,1,2,3", options="header"]
 |===
 |Method |Arguments |Return Type |Description
 
