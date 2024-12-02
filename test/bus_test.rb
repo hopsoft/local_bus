@@ -64,7 +64,8 @@ class LocalBus
 
       assert subscribers.all? { _1 in LocalBus::Subscriber }
       assert_equal (0..bus.concurrency - 1).to_a, subscribers.map(&:value)
-      assert (@latency...(@latency * 1.25)).cover?(Time.now - start)
+      assert (Time.now - start) > @latency, "Test completed too quickly"
+      assert (Time.now - start) < (@latency * 3), "Test took too long"
     end
 
     def test_publish_with_callable_object

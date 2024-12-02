@@ -19,3 +19,7 @@ Minitest::Reporters.use! [
   # the test suite has intentional latency... benchmarking speed doesn't make much sense
   # Minitest::Reporters::MeanTimeReporter.new(show_count: 5, show_progress: false, sort_column: :avg, previous_runs_filename: "tmp/minitest-report")
 ]
+
+RUNNING_IN_CI = ENV["CI"] == "true"
+DEFAULT_LATENCY = RUNNING_IN_CI ? 1.0 : 0.25
+DEFAULT_TIMEOUT_MULTIPLIER = RUNNING_IN_CI ? 3 : 1.25
