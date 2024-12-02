@@ -1,17 +1,19 @@
 = LocalBus
-:doctype: article
-:toc:
-:toc-title:
-:toc-placement: preamble
+:toc: macro
 :icons: font
 :source-highlighter: highlight.js
 :experimental:
+:tip-caption: 💡 TIP
+:note-caption: ℹ️ NOTE
+:important-caption: ⚠️ IMPORTANT
+:warning-caption: 🚨 WARNING
 :description: A lightweight pub/sub system for Ruby that helps organize and simplify intra-process communication.
 :keywords: Ruby, pub/sub, message bus, event bus, async, concurrency
 
-[discrete]
+[.text-center]
 A lightweight single-process pub/sub system that enables clean, decoupled interactions.
 
+[.text-center]
 image:https://img.shields.io/badge/loc-341-47d299.svg["Lines of Code",link="http://blog.codinghorror.com/the-best-code-is-no-code-at-all/"]
 image:https://img.shields.io/gem/v/local_bus["GEM Version",link="https://rubygems.org/gems/local_bus"]
 image:https://img.shields.io/gem/dt/local_bus["GEM Downloads",link="https://rubygems.org/gems/local_bus"]
@@ -19,6 +21,8 @@ image:https://github.com/hopsoft/local_bus/actions/workflows/tests.yml/badge.svg
 image:https://img.shields.io/badge/style-standard-168AFE?logo=ruby&logoColor=FE1616["Ruby Style",link="https://github.com/testdouble/standard"]
 image:https://img.shields.io/github/sponsors/hopsoft?color=eb4aaa&logo=GitHub%20Sponsors["Sponsors",link="https://github.com/sponsors/hopsoft"]
 image:https://img.shields.io/twitter/url?label=%40hopsoft&style=social&url=https%3A%2F%2Ftwitter.com%2Fhopsoft["Twitter Follow",link="https://twitter.com/hopsoft"]
+
+toc::[]
 
 == Why LocalBus?
 
@@ -47,6 +51,7 @@ bundle add local_bus
 * *Station*: Multi-threaded message queuing powered by a thread pool, processing messages through the Bus without blocking the main thread
 
 [TIP]
+.Quick Access
 ====
 LocalBus provides a singleton instance where you can access the default Bus and Station:
 
@@ -185,6 +190,7 @@ bus = LocalBus::Bus.new(concurrency: 10)
 ----
 
 [NOTE]
+.Concurrency Limits
 ====
 When the max concurrency limit is reached, new publish operations will wait until a slot becomes available.
 This helps to ensure we don't over utilize system resources.
@@ -275,6 +281,7 @@ The Station delays process exit in an attempt to flush the queue and avoid dropp
 This delay can be configured via the `:flush_delay` option in the constructor (default: 1).
 
 [IMPORTANT]
+.Message Flushing
 ====
 Flushing makes a "best effort" to process all messages at exit, but it's not guaranteed.
 Factor for potential message loss when designing your system.
