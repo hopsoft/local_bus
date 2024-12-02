@@ -1,6 +1,6 @@
 <p align="center">
   <a href="http://blog.codinghorror.com/the-best-code-is-no-code-at-all/">
-    <img alt="Lines of Code" src="https://img.shields.io/badge/loc-341-47d299.svg" />
+    <img alt="Lines of Code" src="https://img.shields.io/badge/loc-344-47d299.svg" />
   </a>
   <a href="https://rubygems.org/gems/local_bus">
     <img alt="GEM Version" src="https://img.shields.io/gem/v/local_bus">
@@ -47,7 +47,6 @@ LocalBus is a lightweight pub/sub system for Ruby that helps organize and simpli
     - [Shutdown & Cleanup](#shutdown--cleanup)
     - [Limitations](#limitations)
   - [See Also](#see-also)
-  - [Sponsors](#sponsors)
 
 <!-- Tocer[finish]: Auto-generated, don't remove. -->
 
@@ -303,14 +302,3 @@ Consider these limitations when designing your system architecture.
 
 - [Message Bus](https://github.com/discourse/message_bus) - A reliable and robust messaging bus for Ruby and Rack
 - [Wisper](https://github.com/krisleech/wisper) - A micro library providing Ruby objects with Publish-Subscribe capabilities
-
-## Sponsors
-
-<p align="center">
-  <em>Proudly sponsored by</em>
-</p>
-<p align="center">
-  <a href="https://www.clickfunnels.com?utm_source=hopsoft&utm_medium=open-source&utm_campaign=local_bus">
-    <img src="https://images.clickfunnel.com/uploads/digital_asset/file/176632/clickfunnels-dark-logo.svg" width="575" />
-  </a>
-</p>
