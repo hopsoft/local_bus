@@ -173,56 +173,23 @@ class LocalBus
 
     def test_stop_with_unprocessed_messages
       station = Station.new
-      message_count = 30
-      sleep_duration = RUNNING_IN_CI ? 4.0 : 1.0
-      wait_duration = RUNNING_IN_CI ? 8.0 : 2.0
 
-      # Track when we started for better error messages
-      start_time = Time.now
-
-      message_count.times do |i|
+      30.times do |i|
         station.bus.concurrency.times do
-          station.subscribe("topic-#{i}") { sleep sleep_duration }
+          station.subscribe("topic-#{i}") { sleep 1 }
         end
         station.publish("topic-#{i}")
       end
 
-      # Wait for some messages to process before stopping
-      sleep wait_duration
+      sleep 2 # given the above setup, allow 2/3 of the messages to process before stopping
       station.stop
 
-      # Capture timing data for debugging
-      stop_time = Time.now
-      elapsed = stop_time - start_time
+      assert_equal 10, station.pending
 
-      # Assert that we have some pending messages, but be more flexible about the exact number
-      pending = station.pending
-      total_messages = message_count * station.bus.concurrency
-
-      assert(
-        pending > 0,
-        "Expected some messages to be pending after #{elapsed.round(2)}s. " \
-        "Started #{total_messages} messages, but all completed before stop."
-      )
-
-      assert(
-        pending < total_messages,
-        "Too many messages were pending (#{pending}/#{total_messages}) after #{elapsed.round(2)}s. " \
-        "Expected some messages to complete before stop."
-      )
-
-      # Resume processing with longer wait time
+      # resume processing
       station.start
-      resume_wait = RUNNING_IN_CI ? 12.0 : 2.0
-      sleep resume_wait
-
-      final_pending = station.pending
-      assert_equal(
-        0,
-        final_pending,
-        "Expected all messages to complete after resuming. #{final_pending} messages still pending " \
-        "after waiting #{resume_wait}s more."
-      )
+      sleep 1
+      assert_equal 0, station.pending
     end
   end
 end
