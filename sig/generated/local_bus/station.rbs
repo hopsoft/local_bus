@@ -1,18 +1,9 @@
 # Generated from lib/local_bus/station.rb with RBS::Inline
 
 class LocalBus
-  # An in-process message queuing system that buffers and publishes messages to Bus.
-  # This class acts as an intermediary, queuing messages internally before publishing them to the Bus.
+  # An in-process message queuing system that buffers messages before publishing them via Bus.
   #
-  # @note Station shares the same interface as Bus and is thus a message bus.
-  #       The key difference is that Stations are multi-threaded and will not block the main thread.
-  #
-  # Three fallback policies are supported:
-  # 1. `abort` - Raises an exception and discards the task when the queue is full (default)
-  # 2. `discard` - Discards the task when the queue is full
-  # 3. `caller_runs` - Executes the task on the calling thread when the queue is full,
-  #                 This effectively jumps the queue (and blocks the main thread) but ensures the task is performed
-  #
+  # NOTE: Station shares the same publishing interface as Bus
   # IMPORTANT: Be sure to release resources like database connections in subscribers when publishing via Station.
   class Station
     include MonitorMixin
@@ -21,13 +12,19 @@ class LocalBus
     end
 
     # Constructor
+    #
+    # @note Delays process exit in an attempt to flush the queue to avoid dropping messages.
+    #       Exit flushing makes a "best effort" to process all messages, but it's not guaranteed.
+    #       Will not delay process exit when the queue is empty.
+    #
     # @rbs bus: Bus -- local message bus (default: Bus.new)
     # @rbs interval: Float -- queue polling interval in seconds (default: 0.01)
     # @rbs size: Integer -- max queue size (default: 10_000)
     # @rbs threads: Integer -- number of threads to use (default: Etc.nprocessors)
-    # @rbs timeout: Float -- seconds to wait for a published message to complete
+    # @rbs timeout: Float -- seconds to wait for subscribers to process the message before cancelling (default: 60)
+    # @rbs flush_delay: Float -- seconds to wait for the queue to flush at process exit (default: 1)
     # @rbs return: void
-    def initialize: (?bus: Bus, ?interval: Float, ?size: Integer, ?threads: Integer, ?timeout: Float) -> void
+    def initialize: (?bus: Bus, ?interval: Float, ?size: Integer, ?threads: Integer, ?timeout: Float, ?flush_delay: Float) -> void
 
     # Bus instance
     # @rbs return: Bus
@@ -56,8 +53,9 @@ class LocalBus
     def start: (?interval: Float, ?threads: Integer) -> void
 
     # Stops the station
+    # @rbs timeout: Float -- seconds to wait for message processing before killing the thread pool (default: nil)
     # @rbs return: void
-    def stop: () -> void
+    def stop: (?timeout: Float) -> void
 
     def stopping?: () -> untyped
 

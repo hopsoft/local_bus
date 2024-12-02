@@ -92,8 +92,8 @@ class LocalBus
       # The publish operation completes with partial success
       message = station.publish("user.created", user_id: 123)
       subscribers = message.subscribers
-      errored_subscribers = subscribers.select(&:error)
-      successful_subscribers = subscribers.reject(&:error)
+      errored_subscribers = subscribers.select(&:errored?)
+      successful_subscribers = subscribers.reject(&:errored?)
 
       assert_equal 2, subscribers.size
       assert_equal 1, errored_subscribers.size

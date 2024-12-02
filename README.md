@@ -30,23 +30,23 @@ LocalBus is a lightweight pub/sub system for Ruby that helps organize and simpli
 
 ## Table of Contents
 
-  - [Why LocalBus?](#why-localbus)
-  - [Installation](#installation)
-  - [Quick Start](#quick-start)
-    - [Interfaces](#interfaces)
-    - [Bus (immediate processing)](#bus-immediate-processing)
-    - [Station (background processing)](#station-background-processing)
-  - [Advanced Usage & Considerations](#advanced-usage--considerations)
-    - [Concurrency Controls](#concurrency-controls)
-      - [Bus Interface (Async)](#bus-interface-async)
-      - [Station Interface (Thread Pool)](#station-interface-thread-pool)
-    - [Error Handling & Recovery](#error-handling--recovery)
-    - [Memory Considerations](#memory-considerations)
-    - [Blocking Operations](#blocking-operations)
-    - [Shutdown & Cleanup](#shutdown--cleanup)
-    - [Limitations](#limitations)
-  - [See Also](#see-also)
-  - [Sponsors](#sponsors)
+- [Why LocalBus?](#why-localbus)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+  - [Interfaces](#interfaces)
+  - [Bus (immediate processing)](#bus-immediate-processing)
+  - [Station (background processing)](#station-background-processing)
+- [Advanced Usage & Considerations](#advanced-usage--considerations)
+  - [Concurrency Controls](#concurrency-controls)
+    - [Bus Interface (Async)](#bus-interface-async)
+    - [Station Interface (Thread Pool)](#station-interface-thread-pool)
+  - [Error Handling & Recovery](#error-handling--recovery)
+  - [Memory Considerations](#memory-considerations)
+  - [Blocking Operations](#blocking-operations)
+  - [Shutdown & Cleanup](#shutdown--cleanup)
+  - [Limitations](#limitations)
+- [See Also](#see-also)
+- [Sponsors](#sponsors)
 
 <!-- Tocer[finish]: Auto-generated, don't remove. -->
 
@@ -74,212 +74,227 @@ bundle add local_bus
 
 ### Interfaces
 
-- **Bus**: Single-threaded, immediate message delivery using Socketry Async with non-blocking I/O operations
-- **Station**: Multi-threaded message queuing powered by Concurrent Ruby's thread pool, processing messages through the Bus without blocking the main thread
-
-Both interfaces ensure optimal performance:
-
-- Bus leverages async I/O to prevent blocking on network or disk operations
-- Station offloads work to a managed thread pool, keeping the main thread responsive
-- Both interfaces support an explicit `wait` for subscribers
+- **Bus**: Single-threaded, immediate message delivery using Socketry `Async` with non-blocking I/O operations
+- **Station**: Multi-threaded message queuing powered by a thread pool, processing messages through the Bus without blocking the main thread
 
 ### Bus (immediate processing)
 
-Best for real-time operations like logging, metrics, and state updates.
+Best for operations that should be processed as soon as possible.
+(e.g. API calls required for the current operation, etc.)
 
 ```ruby
 bus = LocalBus::Bus.new # ... or LocalBus.instance.bus
 
+# register a subscriber
 bus.subscribe "user.created" do |message|
-  AuditLog.record(message.payload)
-  true
+  # business logic (e.g. API calls, database queries, disk operations, etc.)
 end
 
-# publish returns a promise-like object that resolves to subscribers
-result = bus.publish("user.created", user_id: 123)
+message = bus.publish("user.created", user_id: 123)
 
-result.wait  # blocks until all subscribers complete
-result.value # blocks and waits until all subscribers complete and returns the subscribers
+message.wait        # blocks until all subscribers complete
+message.subscribers # waits and returns the subscribers
+#=> [#<LocalBus::Subscriber:0x000000012bbb79a8 ...>]
 ```
 
 Subscribe with an explicit `callable`.
 
 ```ruby
-callable = ->(message) { "Received message: #{message.payload}" }
+callable = ->(message) do
+  # business logic (e.g. API calls, database queries, disk operations, etc.)
+  "It worked!"
+end
 LocalBus.instance.bus.subscribe "user.created", callable: callable
 
-subscribers = LocalBus.instance.bus.publish("user.created", user_id: 123).value
-# => [#<LocalBus::Subscriber:0x0000000126b7cf38 ...>]
+message = LocalBus.instance.bus.publish("user.created", user_id: 123)
+message.subscribers
+#=> [#<LocalBus::Subscriber:0x0000000126b7cf38 ...>]
 
-subscribers.first.value
-# => "Received message: {:user_id=>123}"
+message.subscribers.first.value
+#=> "It worked!"
 
-# you can use any object that responds to #call
-class ExampleCallable
+# subscribe with any object that responds to #call
+class UserCreatedCallable
   def call(message)
-    "Received message: #{message.payload}"
+    # business logic (e.g. API calls, database queries, disk operations, etc.)
+    "It worked!"
   end
 end
 
-LocalBus.instance.bus.subscribe "user.created", callable: ExampleCallable.new
-subscribers = LocalBus.instance.bus.publish("user.created", user_id: 123).value
-# => [#<LocalBus::Subscriber:0x0000000126b7cf38 ...>]
+LocalBus.instance.bus.subscribe "user.created", callable: UserCreatedCallable.new
+message = LocalBus.instance.bus.publish("user.created", user_id: 123)
+message.subscribers
+#=> [#<LocalBus::Subscriber:0x0000000126b7cf38 ...>]
 
-subscribers.first.value
-# => "Received message: {:user_id=>123}"
+# access subscriber (callable) values
+message.subscribers.first.value
+#=> "It worked!"
 ```
 
 ### Station (background processing)
 
-Best for async operations like emails, notifications, and resource-intensive tasks.
+Best for operations not not immediately required for the current operation.
 
 ```ruby
 station = LocalBus::Station.new # ... or LocalBus.instance.station
 
 station.subscribe "email.welcome" do |message|
-  WelcomeMailer.deliver(message.payload[:user_id])
-  true
+  # business logic (e.g. API calls, database queries, disk operations, etc.)
+  "It worked!"
 end
 
-# Returns a Promise or Future that resolves to subscribers
-result = station.publish("email.welcome", user_id: 123)
+message = station.publish("email.welcome", user_id: 123)
 
-result.wait  # blocks until all subscribers complete
-result.value # blocks and waits until all subscribers complete and returns the subscribers
+message.wait        # blocks until all subscribers complete
+message.subscribers # blocks and waits until all subscribers complete and returns the subscribers
+#=> [#<LocalBus::Subscriber:0x00000001253156e8 ...>]
+
+message.subscribers.first.value
+#=> "It worked!"
 ```
 
 Subscribe with an explicit `callable`.
 
 ```ruby
-callable = ->(message) { "Received message: #{message.payload}" }
+callable = ->(message) do
+  # business logic (e.g. API calls, database queries, disk operations, etc.)
+  "It worked!"
+end
 LocalBus.instance.station.subscribe "email.welcome", callable: callable
 
-subscribers = LocalBus.instance.station.publish("email.welcome", user_id: 123).value
-# => [#<LocalBus::Subscriber:0x0000000126b7cf38 ...>]
+message = LocalBus.instance.station.publish("email.welcome", user_id: 123)
+message.subscribers
+#=> [#<LocalBus::Subscriber:0x0000000126b7cf38 ...>]
 
-subscribers.first.value
-# => "Received message: {:user_id=>123}"
+message.subscribers.first.value
+#=> "It worked!"
 
 # you can use any object that responds to #call
-class ExampleCallable
+class WelcomeEmailCallable
   def call(message)
-    "Received message: #{message.payload}"
+    # business logic (e.g. API calls, database queries, disk operations, etc.)
+    "It worked!"
   end
 end
 
-LocalBus.instance.station.subscribe "email.welcome", callable: ExampleCallable.new
-subscribers = LocalBus.instance.station.publish("email.welcome", user_id: 123).value
-# => [#<LocalBus::Subscriber:0x0000000126b7cf38 ...>]
+LocalBus.instance.station.subscribe "email.welcome", callable: WelcomeEmailCallable.new
+message = LocalBus.instance.station.publish("email.welcome", user_id: 123)
+message.subscribers
+#=> [#<LocalBus::Subscriber:0x0000000126b7cf38 ...>]
 
-subscribers.first.value
-# => "Received message: {:user_id=>123}"
+message.subscribers.first.value
+#=> "It worked!"
 ```
 
 ## Advanced Usage & Considerations
 
 ### Concurrency Controls
 
-#### Bus Interface (Async)
+#### Bus Interface
 
-The Bus interface uses Async's Semaphore to limit resource consumption:
+The Bus interface uses Async's Semaphore to limit resource consumption.
+The configured `concurrency` limits how many operations can run at once.
 
 ```ruby
-# Configure concurrency limits for the Bus
+# Configure concurrency limits for the Bus (default: Etc.nprocessors)
 bus = LocalBus::Bus.new(concurrency: 10)
-
-# The semaphore ensures only N concurrent operations run at once
-bus.subscribe "resource.intensive" do |message|
-  # Only 10 of these will run concurrently
-  perform_intensive_operation(message)
-end
 ```
 
-When the max concurrency limit is reached, new publish operations will wait until a slot becomes available. This prevents memory bloat but means you should be mindful of timeouts in your subscribers.
+> [!NOTE]
+> When the max concurrency limit is reached, new publish operations will wait until a slot becomes available.
+> This helps to ensure we don't over utilize system resources.
 
-#### Station Interface (Thread Pool)
+#### Station Interface
 
-The Station interface uses Concurrent Ruby's fixed thread pool with a fallback policy:
+The Station interface uses a thread pool for multi-threaded message processing.
 
 ```ruby
-# Configure the thread pool size for the Station
+# Configure the pool size for the Station
 station = LocalBus::Station.new(
-  max_queue: 5_000, # Maximum number of queued items
-  max_threads: 10, # Maximum pool size
-  fallback_policy: :caller_runs # Runs on calling thread
+  size: 5_000, # max queued messages allowed (default: 10_000)
+  threads: 10, # max number of threads (default: Etc.nprocessors)
 )
 ```
 
-The fallback policy determines behavior when the thread pool is saturated:
+##### Message Priority
 
-- `:caller_runs` - Executes the task in the publishing thread (can block)
-- `:abort` - Raises an error
-- `:discard` - Silently drops the task
+The Station interface supports assigning a priority to each message.
+Messages with a higher priority are processed before lower priority messaages.
+
+```ruby
+station = LocalBus.instance.station
+station.publish("critical", priority: 10) # processed first
+station.publish("important", priority: 5) # processed next
+station.publish("low")                    # processed last
+```
 
 ### Error Handling & Recovery
 
-Both interfaces implement error boundaries to prevent individual subscriber failures from affecting others:
+Both interfaces implement error boundaries to prevent individual subscriber failures from affecting other subscribers:
 
 ```ruby
+bus = LocalBus::Bus.new
+
 bus.subscribe "user.created" do |message|
   raise "Something went wrong!"
-  true # Never reached
+  # never reached (business logic...)
 end
 
 bus.subscribe "user.created" do |message|
-  # This still executes despite the error above
-  notify_admin(message)
-  true
+  # This still executes despite the error in the subscriber above
+  # business logic (e.g. API calls, database queries, disk operations, etc.)
 end
 
 # The publish operation completes with partial success
-result = bus.publish("user.created", user_id: 123)
-result.wait
-errored_subscribers = result.value.select(&:error)
+message = bus.publish("user.created", user_id: 123)
+errored_subscribers = message.subscribers.select(&:errored?)
+#=> [#<LocalBus::Subscriber:0x000000011ebbcaf0 ...>]
+
+errored_subscribers.first.error
+#=> #<LocalBus::Subscriber::Error: Invocation failed! Something went wrong!>
 ```
 
 ### Memory Considerations
 
-Messages are held in memory until all subscribers complete processing. For the Station interface, this includes time spent in the thread pool queue. Consider this when publishing large payloads or during high load:
+Messages are held in memory until all subscribers have completed.
+Consider this when publishing large payloads or during high load scenarios.
 
 ```ruby
-# Memory-efficient publishing of large datasets
+# memory-efficient publishing of large datasets
 large_dataset.each_slice(100) do |batch|
-  station.publish("data.process", items: batch).wait
+  message = station.publish("data.process", items: batch)
+  message.wait # wait before processing more messages
 end
 ```
 
 ### Blocking Operations
 
-The Bus interface uses non-blocking I/O but can still be blocked by CPU-intensive operations:
+The Bus interface uses non-blocking I/O but can still be blocked by CPU-intensive operations.
 
 ```ruby
-# Bad - blocks the event loop
+# blocks the event loop
 bus.subscribe "cpu.intensive" do |message|
-  perform_heavy_calculation(message)
-end
-
-# Better - offload to Station for CPU-intensive work
-station.subscribe "cpu.intensive" do |message|
-  perform_heavy_calculation(message)
+  # CPU bound operation
 end
 ```
 
 ### Shutdown & Cleanup
 
-LocalBus does its best to handle graceful shutdown when the process exits, and works to ensure published messages are processed.
-However, it's possible that some messages may be lost when the process exits.
+The Station delays process exit in an attempt to flush the queue and avoid dropped messages.
+This delay can be configured via the `:flush_delay` option in the constructor (default: 1).
 
-Factor for potential message loss when designing your system.
-For example, idempotency _(i.e. messages that can be re-published without unintended side effects)_.
+> [!IMPORTANT]
+> Flushing makes a "best effort" to process all messages at exit, but it's not guaranteed.
+> Factor for potential message loss when designing your system.
+> For example, idempotency _(i.e. messages that can be re-published without unintended side effects)_.
 
 ### Limitations
 
-- The Bus interface is single-threaded - long-running subscribers can impact latency
-- The Station interface may drop messages if configured with `:discard` fallback policy
-- No persistence - pending messages may be lost on process restart
-- No distributed support - communication limited to single process
-- Large payloads can impact memory usage, especially under high load
-- No built-in retry mechanism for failed subscribers
+- The Bus interface is single-threaded - long-running or CPU-bound subscribers can impact latency
+- The Station interface may drop messages at process exit _(messages are not persisted between process restarts)_
+- No distributed support - the message broker is limited to single process _(intra-process)_
+- Large message payloads may impact memory usage, especially under high load
+- No built-in retry mechanism for failed subscribers _(subscribers expose an error property, but you'll need to check and handle such errors)_
 
 Consider these limitations when designing your system architecture.
 

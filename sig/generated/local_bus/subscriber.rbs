@@ -3,6 +3,8 @@
 class LocalBus
   # Wraps a Callable (Proc) and Message intended for asynchronous execution.
   class Subscriber
+    include MonitorMixin
+
     # Custom error class for Subscriber errors
     class Error < StandardError
       # Constructor
@@ -52,9 +54,13 @@ class LocalBus
     # @rbs return: bool
     def performed?: () -> bool
 
-    # Checks if the subscriber is pending
+    # Indicates if the subscriber is pending or unperformed
     # @rbs return: bool
     def pending?: () -> bool
+
+    # Indicates if the subscriber has errored
+    # @rbs return: bool
+    def errored?: () -> bool
 
     # Performs the subscriber's callable
     # @rbs return: void

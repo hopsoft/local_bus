@@ -5,18 +5,9 @@
 # rubocop:disable Style/ArgumentsForwarding
 
 class LocalBus
-  # An in-process message queuing system that buffers and publishes messages to Bus.
-  # This class acts as an intermediary, queuing messages internally before publishing them to the Bus.
+  # An in-process message queuing system that buffers messages before publishing them via Bus.
   #
-  # @note Station shares the same interface as Bus and is thus a message bus.
-  #       The key difference is that Stations are multi-threaded and will not block the main thread.
-  #
-  # Three fallback policies are supported:
-  # 1. `abort` - Raises an exception and discards the task when the queue is full (default)
-  # 2. `discard` - Discards the task when the queue is full
-  # 3. `caller_runs` - Executes the task on the calling thread when the queue is full,
-  #                 This effectively jumps the queue (and blocks the main thread) but ensures the task is performed
-  #
+  # NOTE: Station shares the same publishing interface as Bus
   # IMPORTANT: Be sure to release resources like database connections in subscribers when publishing via Station.
   #
   class Station
@@ -25,20 +16,27 @@ class LocalBus
     class QueueFullError < StandardError; end
 
     # Constructor
+    #
+    # @note Delays process exit in an attempt to flush the queue to avoid dropping messages.
+    #       Exit flushing makes a "best effort" to process all messages, but it's not guaranteed.
+    #       Will not delay process exit when the queue is empty.
+    #
     # @rbs bus: Bus -- local message bus (default: Bus.new)
     # @rbs interval: Float -- queue polling interval in seconds (default: 0.01)
     # @rbs size: Integer -- max queue size (default: 10_000)
     # @rbs threads: Integer -- number of threads to use (default: Etc.nprocessors)
-    # @rbs timeout: Float -- seconds to wait for a published message to complete
+    # @rbs timeout: Float -- seconds to wait for subscribers to process the message before cancelling (default: 60)
+    # @rbs flush_delay: Float -- seconds to wait for the queue to flush at process exit (default: 1)
     # @rbs return: void
-    def initialize(bus: Bus.new, interval: 0.01, size: 10_000, threads: Etc.nprocessors, timeout: 60)
+    def initialize(bus: Bus.new, interval: 0.01, size: 10_000, threads: Etc.nprocessors, timeout: 60, flush_delay: 1)
       super()
       @bus = bus
-      @interval = interval.to_f
-      @size = size.to_i
-      @threads = threads.to_i
+      @interval = [interval.to_f, 0.01].max
+      @size = size.to_i.positive? ? size.to_i : 10_000
+      @threads = [threads.to_i, 1].max
       @timeout = timeout.to_f
       @queue = Containers::PriorityQueue.new
+      at_exit { stop timeout: [flush_delay.to_f, 1].max }
       start
     end
 
@@ -67,48 +65,49 @@ class LocalBus
     # @rbs threads: Integer -- number of threads to use (default: self.threads)
     # @rbs return: void
     def start(interval: self.interval, threads: self.threads)
+      interval = [interval.to_f, 0.01].max
+      threads = [threads.to_i, 1].max
+
       synchronize do
         return if running? || stopping?
 
-        # Supervisor thread that orchestrates the worker pool
-        @thread = Thread.new do
-          size = (threads >= 2) ? threads - 1 : 1
-          pool = Async::WorkerPool.new(size: size)
-
-          threads.times do
-            pool.call -> do
-              timers = Timers::Group.new
-              timers.every interval do
-                bus.send :publish_message, @queue.pop unless @queue.empty?
-              end
-
-              loop do
-                break if stopping?
-                timers.wait
-              end
-
-              timers.cancel
+        timers = Timers::Group.new
+        @pool = []
+        threads.times do
+          @pool << Thread.new do
+            Thread.current.report_on_exception = true
+            timers.every interval do
+              message = synchronize { @queue.pop unless @queue.empty? || stopping? }
+              bus.send :publish_message, message if message
             end
-          end
 
-          Thread.current[:pool] = pool
+            loop do
+              timers.wait
+              break if stopping?
+            end
+          ensure
+            timers.cancel
+          end
         end
       end
     end
 
     # Stops the station
+    # @rbs timeout: Float -- seconds to wait for message processing before killing the thread pool (default: nil)
     # @rbs return: void
-    def stop
+    def stop(timeout: nil)
       synchronize do
         return unless running?
         return if stopping?
         @stopping = true
       end
-      @thread[:pool]&.close
-      @thread&.join
+
+      @pool&.each do |thread|
+        timeout.is_a?(Numeric) ? thread.join(timeout) : thread.join
+      end
     ensure
       @stopping = false
-      @thread = nil
+      @pool = nil
     end
 
     def stopping?
@@ -118,7 +117,7 @@ class LocalBus
     # Indicates if the station is running
     # @rbs return: bool
     def running?
-      synchronize { !!@thread }
+      synchronize { !!@pool }
     end
 
     # Subscribe to a topic

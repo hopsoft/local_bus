@@ -107,9 +107,9 @@ class LocalBus
     # Check individual Subscribers for possible errors.
     #
     # @rbs topic: String -- topic name
-    # @rbs timeout: Float -- seconds to wait before cancelling (default: 60)
+    # @rbs timeout: Float -- seconds to wait for subscribers to process the message before cancelling (default: 60)
     # @rbs payload: Hash -- message payload
-    # @rbs return: Publication -- promise responsible for processing the message
+    # @rbs return: Message
     def publish(topic, timeout: 60, **payload)
       publish_message Message.new(topic, timeout: timeout.to_f, **payload)
     end
@@ -117,7 +117,7 @@ class LocalBus
     private
 
     # Publishes a message to the queue
-    # @rbs return: Publication -- promise responsible for processing the message
+    # @rbs return: Message
     def publish_message(message)
       barrier = Async::Barrier.new
       subscribers = subscriptions.fetch(message.topic, []).map { Subscriber.new _1, message }
@@ -143,6 +143,7 @@ class LocalBus
       end
 
       message.publication = Publication.new(barrier, *subscribers)
+      message
     end
   end
 end

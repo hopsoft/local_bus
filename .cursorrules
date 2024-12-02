@@ -25,6 +25,7 @@
 === Concurrency Fundamentals
 * Understanding the Global Interpreter Lock (GIL)
 * Difference between parallelism and concurrency
+* Thread safety and isolation
 * Thread vs Fiber execution models
 * Blocking vs non-blocking operations
 * Memory visibility and sharing
@@ -51,16 +52,6 @@
 * Timeout management
 * Error isolation
 * Performance optimization
-
-=== WorkerPool Architecture
-* Thread delegation strategies
-* Work distribution patterns
-* Resource pooling mechanics
-* Queue management
-* Graceful shutdown procedures
-* Worker lifecycle states
-* Load balancing approaches
-* Health monitoring
 
 === Timer System Design
 * Timer scheduling algorithms

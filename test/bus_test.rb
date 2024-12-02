@@ -58,9 +58,9 @@ class LocalBus
       end
 
       start = Time.now
-      publication = bus.publish(@topic)
-      publication.wait
-      subscribers = publication.subscribers
+      message = bus.publish(@topic)
+      message.wait
+      subscribers = message.subscribers
 
       assert subscribers.all? { _1 in LocalBus::Subscriber }
       assert_equal (0..bus.concurrency - 1).to_a, subscribers.map(&:value)
@@ -73,8 +73,8 @@ class LocalBus
         bus.subscribe @topic, callable: TestCallable.new
       end
 
-      publication = bus.publish(@topic, number: rand(10))
-      subscribers = publication.subscribers
+      message = bus.publish(@topic, number: rand(10))
+      subscribers = message.subscribers
 
       assert_equal bus.concurrency, subscribers.size
       assert subscribers.all? { _1 in Subscriber }
@@ -103,9 +103,9 @@ class LocalBus
         end
       end
 
-      publication = bus.publish(@topic, test: true)
-      publication.wait
-      subscribers = publication.subscribers
+      message = bus.publish(@topic, test: true)
+      message.wait
+      subscribers = message.subscribers
 
       assert_equal bus.concurrency, bus.subscriptions[@topic].size
       assert_equal bus.concurrency, subscribers.size
@@ -126,10 +126,10 @@ class LocalBus
       end
 
       # The publish operation completes with partial success
-      publication = bus.publish("user.created", user_id: 123)
-      subscribers = publication.subscribers
-      errored_subscribers = subscribers.select(&:error)
-      successful_subscribers = subscribers.reject(&:error)
+      message = bus.publish("user.created", user_id: 123)
+      subscribers = message.subscribers
+      errored_subscribers = subscribers.select(&:errored?)
+      successful_subscribers = subscribers.reject(&:errored?)
 
       assert_equal 2, subscribers.size
       assert_equal 1, errored_subscribers.size
@@ -148,8 +148,8 @@ class LocalBus
       end
       assert_equal count, bus.subscriptions[@topic].size
 
-      publication = bus.publish(@topic, timeout: @latency, test: true)
-      subscribers = publication.subscribers
+      message = bus.publish(@topic, timeout: @latency, test: true)
+      subscribers = message.subscribers
       assert_equal count, subscribers.size
 
       pending = subscribers.select(&:pending?)
