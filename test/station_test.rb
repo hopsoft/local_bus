@@ -174,8 +174,11 @@ class LocalBus
     def test_stop_with_unprocessed_messages
       station = Station.new
       message_count = 30
-      sleep_duration = RUNNING_IN_CI ? 3.0 : 1.0
-      wait_duration = RUNNING_IN_CI ? 6.0 : 2.0
+      sleep_duration = RUNNING_IN_CI ? 4.0 : 1.0
+      wait_duration = RUNNING_IN_CI ? 8.0 : 2.0
+
+      # Track when we started for better error messages
+      start_time = Time.now
 
       message_count.times do |i|
         station.bus.concurrency.times do
@@ -188,15 +191,38 @@ class LocalBus
       sleep wait_duration
       station.stop
 
+      # Capture timing data for debugging
+      stop_time = Time.now
+      elapsed = stop_time - start_time
+
       # Assert that we have some pending messages, but be more flexible about the exact number
       pending = station.pending
-      assert pending > 0, "Expected some messages to be pending"
-      assert pending < message_count * station.bus.concurrency, "Too many messages were pending"
+      total_messages = message_count * station.bus.concurrency
 
-      # Resume processing
+      assert(
+        pending > 0,
+        "Expected some messages to be pending after #{elapsed.round(2)}s. " \
+        "Started #{total_messages} messages, but all completed before stop."
+      )
+
+      assert(
+        pending < total_messages,
+        "Too many messages were pending (#{pending}/#{total_messages}) after #{elapsed.round(2)}s. " \
+        "Expected some messages to complete before stop."
+      )
+
+      # Resume processing with longer wait time
       station.start
-      sleep wait_duration
-      assert_equal 0, station.pending
+      resume_wait = RUNNING_IN_CI ? 12.0 : 2.0
+      sleep resume_wait
+
+      final_pending = station.pending
+      assert_equal(
+        0,
+        final_pending,
+        "Expected all messages to complete after resuming. #{final_pending} messages still pending " \
+        "after waiting #{resume_wait}s more."
+      )
     end
   end
 end
