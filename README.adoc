@@ -19,7 +19,7 @@ image:https://img.shields.io/github/sponsors/hopsoft?color=eb4aaa&logo=GitHub%20
 image:https://img.shields.io/twitter/url?label=%40hopsoft&style=social&url=https%3A%2F%2Ftwitter.com%2Fhopsoft[Twitter Follow, link="https://twitter.com/hopsoft"]
 
 [discrete]
-== A lightweight single-process pub/sub system that enables clean, decoupled interactions in Ruby applications.
+== A lightweight single-process pub/sub system that enables clean, decoupled interactions.
 
 == Why LocalBus?
 
