@@ -1,4 +1,4 @@
-[![Lines of Code](https://img.shields.io/badge/loc-341-47d299.svg)](http://blog.codinghorror.com/the-best-code-is-no-code-at-all/)
+[![Lines of Code](https://img.shields.io/badge/loc-364-47d299.svg)](http://blog.codinghorror.com/the-best-code-is-no-code-at-all/)
 [![GEM Version](https://img.shields.io/gem/v/local_bus)](https://rubygems.org/gems/local_bus)
 [![GEM Downloads](https://img.shields.io/gem/dt/local_bus)](https://rubygems.org/gems/local_bus)
 [![Tests](https://github.com/hopsoft/local_bus/actions/workflows/tests.yml/badge.svg)](https://github.com/hopsoft/local_bus/actions)
@@ -28,33 +28,33 @@ Even within a single process, this pattern offers powerful benefits:
 
 ## Table of Contents
 
-  - [Key Benefits](#key-benefits)
-    - [Performance and Efficiency](#performance-and-efficiency)
-    - [Ease of Use](#ease-of-use)
-    - [Decoupling and Modularity](#decoupling-and-modularity)
-    - [Reliability and Safety](#reliability-and-safety)
-  - [Use Cases and Examples](#use-cases-and-examples)
-    - [Real-Time Notifications](#real-time-notifications)
-    - [Background Processing](#background-processing)
-    - [Decoupled Microservices Communication](#decoupled-microservices-communication)
-  - [Installation](#installation)
-  - [Usage](#usage)
-    - [Bus _(immediate processing)_](#bus-_immediate-processing_)
-    - [Station _(background processing)_](#station-_background-processing_)
-  - [Advanced Usage](#advanced-usage)
-    - [Concurrency Controls](#concurrency-controls)
-      - [Bus](#bus)
-      - [Station](#station)
-        - [Message Priority](#message-priority)
-    - [Error Handling & Recovery](#error-handling--recovery)
-    - [Memory Considerations](#memory-considerations)
-    - [Blocking Operations](#blocking-operations)
-    - [Shutdown & Cleanup](#shutdown--cleanup)
-    - [Limitations](#limitations)
-  - [Interfaces](#interfaces)
-  - [Interfaces](#interfaces-1)
-    - [Logging and Monitoring](#logging-and-monitoring)
-  - [See Also](#see-also)
+- [Key Benefits](#key-benefits)
+  - [Performance and Efficiency](#performance-and-efficiency)
+  - [Ease of Use](#ease-of-use)
+  - [Decoupling and Modularity](#decoupling-and-modularity)
+  - [Reliability and Safety](#reliability-and-safety)
+- [Use Cases](#use-cases)
+- [Key Components](#key-components)
+  - [Bus](#bus)
+  - [Station](#station)
+  - [LocalBus](#localbus)
+- [Installation](#installation)
+- [Usage](#usage)
+  - [LocalBus](#localbus-1)
+  - [Bus](#bus-1)
+  - [Station](#station-1)
+- [Advanced Usage](#advanced-usage)
+  - [Concurrency Controls](#concurrency-controls)
+    - [Bus](#bus-2)
+    - [Station](#station-2)
+      - [Message Priority](#message-priority)
+  - [Error Handling](#error-handling)
+  - [Memory Considerations](#memory-considerations)
+  - [Blocking Operations](#blocking-operations)
+  - [Shutdown & Cleanup](#shutdown--cleanup)
+  - [Limitations](#limitations)
+- [Interfaces](#interfaces)
+- [See Also](#see-also)
 
 <!-- Tocer[finish]: Auto-generated, don't remove. -->
 
@@ -82,61 +82,100 @@ LocalBus offers several advantages that make it an attractive choice for Ruby de
 - **Built-in Error Handling:** LocalBus includes error boundaries to ensure that failures in one subscriber do not affect others, maintaining system stability.
 - **Thread Safety:** Designed with concurrency in mind, LocalBus provides thread-safe operations to prevent race conditions and ensure data integrity.
 
-By choosing LocalBus, developers can build robust, efficient, and maintainable applications with ease.
-
-## Use Cases and Examples
+## Use Cases
 
 LocalBus is versatile and can be applied to various scenarios within a Ruby application. Here are some common use cases and examples:
 
-### Real-Time Notifications
+<details>
+<summary><b>Decoupled Communication</b></summary>
+<br>
+Facilitate communication between different parts of a component-based architecture without tight coupling.
 
+```ruby
+# Component A subscribes to order creation events
+LocalBus.subscribe "order.created" do |message|
+  InventoryService.update_stock message.payload[:order_id]
+end
+
+# Component B publishes an order creation event
+LocalBus.publish "order.created", order_id: 789
+```
+
+</details>
+
+<details>
+<summary><b>Real-Time Notifications</b></summary>
+<br>
 Use LocalBus to send real-time notifications to users when specific events occur, such as user sign-ups or order completions.
 
 ```ruby
-bus = LocalBus::Bus.new
-
 # Subscribe to user sign-up events
-bus.subscribe "user.signed_up" do |message|
-  NotificationService.send_welcome_email(message.payload[:user_id])
+LocalBus.subscribe "user.signed_up" do |message|
+  NotificationService.send_welcome_email message.payload[:user_id]
 end
 
 # Publish a user sign-up event
-bus.publish("user.signed_up", user_id: 123)
+LocalBus.publish "user.signed_up", user_id: 123
 ```
 
-### Background Processing
+</details>
 
+<details>
+<summary><b>Background Processing</b></summary>
+<br>
 Offload non-critical tasks to be processed in the background, such as sending emails or generating reports.
 
 ```ruby
-station = LocalBus::Station.new
-
 # Subscribe to report generation requests
-station.subscribe "report.generate" do |message|
-  ReportService.generate(message.payload[:report_id])
+LocalBus.subscribe "report.generate" do |message|
+  ReportService.generate message.payload[:report_id]
 end
 
 # Publish a report generation request
-station.publish("report.generate", report_id: 456)
+LocalBus.publish "report.generate", report_id: 456
 ```
 
-### Decoupled Microservices Communication
+</details>
 
-Facilitate communication between different parts of a microservices architecture without tight coupling.
+## Key Components
 
-```ruby
-bus = LocalBus::Bus.new
+### Bus
 
-# Service A publishes an event
-bus.publish("order.created", order_id: 789)
+The Bus acts as a direct transport mechanism for messages, akin to placing a passenger directly onto a bus.
+When a message is published to the Bus, it is immediately delivered to all subscribers, ensuring prompt execution of tasks.
+This is achieved through non-blocking I/O operations, which allow the Bus to handle multiple tasks efficiently without blocking the main thread.
 
-# Service B subscribes to the event
-bus.subscribe "order.created" do |message|
-  InventoryService.update_stock(message.payload[:order_id])
-end
-```
+> [!NOTE]
+> While the Bus uses asynchronous operations to optimize performance,
+> the actual processing of a message may still experience slight delays due to I/O wait times from prior messages.
+> This means that while the Bus aims for immediate processing, the nature of asynchronous operations can introduce some latency.
+
+### Station
+
+The Station serves as a queuing system for messages, similar to a bus station where passengers wait for their bus.
+
+When a message is published to the Station, it is queued and processed at a later time, allowing for deferred execution.
+This is particularly useful for tasks that can be handled later.
+
+The Station employs a thread pool to manage message processing, enabling high concurrency and efficient resource utilization.
+Messages can also be prioritized, ensuring that higher-priority tasks are processed first.
+
+> [!NOTE]
+> While the Station provides a robust mechanism for background processing,
+> it's important to understand that the exact timing of message processing is not controlled by the publisher,
+> and messages will be processed as resources become available.
+
+### LocalBus
+
+The LocalBus class serves as the primary interface to the library, providing a convenient singleton pattern for accessing both Bus and Station functionality. It maintains default instances of both components and exposes a simplified API for common pub/sub operations.
+
+By default, LocalBus delegates to the Station for all pub/sub operations, making it ideal for background processing scenarios. This means that when you use `LocalBus.publish` or `LocalBus.subscribe`, you're actually working with default Station, benefiting from its queuing and thread pool capabilities.
 
 ## Installation
+
+### Requirements
+
+- Ruby `>= 3.0`
 
 ```bash
 bundle add local_bus
@@ -144,12 +183,24 @@ bundle add local_bus
 
 ## Usage
 
-- **Bus**: Single-threaded, immediate message delivery using Socketry `Async` with non-blocking I/O operations
-- **Station**: Multi-threaded message queuing powered by a thread pool, processing messages through the Bus without blocking the main thread
+### LocalBus
 
-### Bus _(immediate processing)_
+```ruby
+LocalBus.subscribe "user.created" do |message|
+  # business logic (e.g. API calls, database queries, disk operations, etc.)
+  "It worked!"
+end
 
-Best for work required by the current operation.
+message = LocalBus.publish("user.created", user_id: 123)
+message.wait        # blocks until all subscribers complete
+message.subscribers # blocks and waits until all subscribers complete and returns the subscribers
+#=> [#<LocalBus::Subscriber:0x0000000120f75c30 ...>]
+
+message.subscribers.first.value
+#=> "It worked!"
+```
+
+### Bus
 
 ```ruby
 bus = LocalBus::Bus.new # ... or LocalBus.instance.bus
@@ -160,99 +211,42 @@ bus.subscribe "user.created" do |message|
 end
 
 message = bus.publish("user.created", user_id: 123)
-
 message.wait        # blocks until all subscribers complete
 message.subscribers # waits and returns the subscribers
 #=> [#<LocalBus::Subscriber:0x000000012bbb79a8 ...>]
-```
 
-Subscribe with an explicit `callable`.
-
-```ruby
-callable = ->(message) do
+# subscribe with any object that responds to `#call`.
+worker = ->(message) do
   # business logic (e.g. API calls, database queries, disk operations, etc.)
   "It worked!"
 end
-LocalBus.instance.bus.subscribe "user.created", callable: callable
-
-message = LocalBus.instance.bus.publish("user.created", user_id: 123)
-message.subscribers
-#=> [#<LocalBus::Subscriber:0x0000000126b7cf38 ...>]
-
-message.subscribers.first.value
-#=> "It worked!"
-
-# subscribe with any object that responds to #call
-class UserCreatedCallable
-  def call(message)
-    # business logic (e.g. API calls, database queries, disk operations, etc.)
-    "It worked!"
-  end
-end
-
-LocalBus.instance.bus.subscribe "user.created", callable: UserCreatedCallable.new
-message = LocalBus.instance.bus.publish("user.created", user_id: 123)
-message.subscribers
-#=> [#<LocalBus::Subscriber:0x0000000126b7cf38 ...>]
-
-# access subscriber (callable) values
-message.subscribers.first.value
-#=> "It worked!"
+bus.subscribe "user.created", callable: worker
 ```
 
-### Station _(background processing)_
-
-Best for work not required by the current operation. _i.e. it can be executed later_
+### Station
 
 ```ruby
 station = LocalBus::Station.new # ... or LocalBus.instance.station
 
-station.subscribe "email.welcome" do |message|
+station.subscribe "user.created" do |message|
   # business logic (e.g. API calls, database queries, disk operations, etc.)
   "It worked!"
 end
 
-message = station.publish("email.welcome", user_id: 123)
-
+message = station.publish("user.created", user_id: 123)
 message.wait        # blocks until all subscribers complete
 message.subscribers # blocks and waits until all subscribers complete and returns the subscribers
 #=> [#<LocalBus::Subscriber:0x00000001253156e8 ...>]
 
 message.subscribers.first.value
 #=> "It worked!"
-```
 
-Subscribe with an explicit `callable`.
-
-```ruby
-callable = ->(message) do
+# subscribe with any object that responds to `#call`.
+worker = ->(message) do
   # business logic (e.g. API calls, database queries, disk operations, etc.)
   "It worked!"
 end
-LocalBus.instance.station.subscribe "email.welcome", callable: callable
-
-message = LocalBus.instance.station.publish("email.welcome", user_id: 123)
-message.subscribers
-#=> [#<LocalBus::Subscriber:0x0000000126b7cf38 ...>]
-
-message.subscribers.first.value
-#=> "It worked!"
-
-# you can use any object that responds to #call
-class WelcomeEmailCallable
-  def call(message)
-    # business logic (e.g. API calls, database queries, disk operations, etc.)
-    "It worked!"
-  end
-end
-
-LocalBus.instance.station.subscribe "email.welcome", callable: WelcomeEmailCallable.new
-message = LocalBus.instance.station.publish("email.welcome", user_id: 123)
-message.subscribers
-#=> [#<LocalBus::Subscriber:0x0000000126b7cf38 ...>]
-
-message.subscribers.first.value
-#=> "It worked!"
+station.subscribe "user.created", callable: worker
 ```
 
 ## Advanced Usage
@@ -261,7 +255,7 @@ message.subscribers.first.value
 
 #### Bus
 
-The Bus uses Async's Semaphore to limit resource consumption.
+The Bus leverages Async's Semaphore to limit resource consumption.
 The configured `concurrency` limits how many operations can run at once.
 
 ```ruby
@@ -276,12 +270,13 @@ bus = LocalBus::Bus.new(concurrency: 10)
 #### Station
 
 The Station uses a thread pool for multi-threaded message processing.
+You can configure the queue size and the number of threads used to process messages.
 
 ```ruby
-# Configure the pool size for the Station
+# Configure the Station
 station = LocalBus::Station.new(
-  size: 5_000, # max queued messages allowed (default: 10_000)
-  threads: 10, # max number of threads (default: Etc.nprocessors)
+  limit: 5_000, # max number of pending messages (default: 10_000)
+  threads: 10,  # max number of processing threads (default: Etc.nprocessors)
 )
 ```
 
@@ -291,37 +286,37 @@ The Station supports assigning a priority to each message.
 Messages with a higher priority are processed before lower priority messages.
 
 ```ruby
-station = LocalBus.instance.station
-station.publish("critical", priority: 10) # processed first
-station.publish("important", priority: 5) # processed next
-station.publish("default")                # processed last
+LocalBus.publish("default")                # 3rd to process
+LocalBus.publish("important", priority: 5) # 2nd to process
+LocalBus.publish("critical", priority: 10) # 1st to process
 ```
 
-### Error Handling & Recovery
+### Error Handling
 
-Both Bus and Station implement error boundaries to prevent individual subscriber failures from affecting other subscribers:
+Error boundaries prevent individual subscriber failures from affecting other subscribers.
 
 ```ruby
-bus = LocalBus::Bus.new
-
-bus.subscribe "user.created" do |message|
+LocalBus.subscribe "user.created" do |message|
   raise "Something went wrong!"
   # never reached (business logic...)
 end
 
-bus.subscribe "user.created" do |message|
-  # This still executes despite the error in the subscriber above
+LocalBus.subscribe "user.created" do |message|
+  # This still executes even though the other subscriber has an error
   # business logic (e.g. API calls, database queries, disk operations, etc.)
 end
 
 # The publish operation completes with partial success
-message = bus.publish("user.created", user_id: 123)
+message = LocalBus.publish("user.created", user_id: 123)
 errored_subscribers = message.subscribers.select(&:errored?)
 #=> [#<LocalBus::Subscriber:0x000000011ebbcaf0 ...>]
 
 errored_subscribers.first.error
 #=> #<LocalBus::Subscriber::Error: Invocation failed! Something went wrong!>
 ```
+
+> [!IMPORTANT]
+> It's up to you to check message subscribers and handle errors appropriately.
 
 ### Memory Considerations
 
@@ -331,29 +326,28 @@ Consider this when publishing large payloads or during high load scenarios.
 ```ruby
 # memory-efficient publishing of large datasets
 large_dataset.each_slice(100) do |batch|
-  message = station.publish("data.process", items: batch)
+  message = LocalBus.publish("data.process", items: batch)
   message.wait # wait before processing more messages
 end
 ```
 
 ### Blocking Operations
 
-The Bus uses non-blocking I/O but can still be blocked by CPU-intensive operations.
+LocalBus facilitates non-blocking I/O but bottlenecks can still be triggered by CPU-intensive operations.
 
 ```ruby
-# blocks the event loop
-bus.subscribe "cpu.intensive" do |message|
-  # CPU bound operation
+LocalBus.subscribe "cpu.intensive" do |message|
+  # CPU bound operation can trigger a bottleneck
 end
 ```
 
 ### Shutdown & Cleanup
 
 The Station delays process exit in an attempt to flush the queue and avoid dropped messages.
-This delay can be configured via the `:flush_delay` option in the constructor (default: 1).
+This delay can be configured via the `:wait` option in the constructor (default: 5).
 
 > [!IMPORTANT]
-> Flushing makes a "best effort" to process all messages at exit, but it's not guaranteed.
+> This wait allows some time for processing pending messages at exit, but this is not guaranteed.
 > Factor for potential message loss when designing your system.
 > For example, idempotency _i.e. messages that can be re-published without unintended side effects_.
 
@@ -369,110 +363,88 @@ Consider these limitations when designing your system architecture.
 
 ## Interfaces
 
-## Interfaces
-
 <details>
 <summary>Bus</summary>
-
-| Method            | Arguments                                                                           | Return Type                     | Description                                                         |
-|-------------------|-------------------------------------------------------------------------------------|---------------------------------|---------------------------------------------------------------------|
-| `initialize`      | `:concurrency` => `Etc.nprocessors`                                                 | `Bus`                           | Creates a new Bus instance with specified max concurrency           |
-| `concurrency`     |                                                                                     | `Integer`                       | Returns the maximum number of concurrent tasks                      |
-| `concurrency=`    | `value`                                                                             | `Integer`                       | Sets the max concurrency                                            |
-| `topics`          |                                                                                     | `Array[String]`                 | Returns array of registered topic names                             |
-| `subscriptions`   |                                                                                     | `Hash[String, Array[callable]]` | Returns hash mapping topics to their subscribers                    |
-| `subscribe`       | `topic`, `:callable: (Message) -> untyped` => `nil`, `&block: (Message) -> untyped` | `self`                          | Subscribes a callable to a topic. Provide either callable or block. |
-| `unsubscribe`     | `topic`, `:callable: (Message) -> untyped`                                          | `self`                          | Unsubscribes a callable from a topic                                |
-| `unsubscribe_all` | `topic`                                                                             | `self`                          | Removes all subscribers from a topic                                |
-| `with_topic`      | `topic`, `&block: (String) -> void`                                                 | `void`                          | Executes block and unsubscribes all from topic afterwards           |
-| `publish`         | `topic`, `:timeout: Float` => `60`, `**payload: Hash`                               | `Message`                       | Publishes message to topic with optional timeout and payload        |
-| `publish_message` | `message`, `:priority` => `1`                                                       | `Message`                       | Publishes a pre-constructed Message object to queue                 |
+<br>
+| Method            | Arguments                                                                           | Return                          | Description                                                 |
+|-------------------|-------------------------------------------------------------------------------------|---------------------------------|-------------------------------------------------------------|
+| `initialize`      | `concurrency: Etc.nprocessors`                                                      | `Bus`                           | Creates a new Bus instance                                  |
+| `concurrency=`    | `value`                                                                             | `Integer`                       | Sets the max concurrency                                    |
+| `concurrency`     |                                                                                     | `Integer`                       | Maximum number of concurrent tasks                          |
+| `publish_message` | `message`<br> `priority: 1`                                                         | `Message`                       | Publishes a pre-built Message                               |
+| `publish`         | `topic`<br> `timeout 60`<br> `**payload`                                            | `Message`                       | Publishes a message                                         |
+| `subscribe`       | `topic`<br> `callable: nil`<br> `&block`                                            | `self`                          | Subscribes to a topic. _(Provide either callable or block)_ |
+| `subscriptions`   |                                                                                     | `Hash[String, Array[callable]]` | Registered Topics and their subscribers                     |
+| `topics`          |                                                                                     | `Array[String]`                 | Registered topic names                                      |
+| `unsubscribe_all` | `topic`                                                                             | `self`                          | Removes all subscribers from a topic                        |
+| `unsubscribe`     | `topic`<br> `callable:`                                                             | `self`                          | Unsubscribes from a topic                                   |
+| `with_topic`      | `topic`<br> `&block`                                                                | `void`                          | Executes block with a topic and unsubscribes all when done  |
 
 </details>
 
 <details>
 <summary>Station</summary>
-
-| Method            | Arguments                                                                           | Return Type | Description                                                         |
-|-------------------|-------------------------------------------------------------------------------------| ------------|---------------------------------------------------------------------|
-| `initialize`      | `:bus` => `Bus.new`, `:interval` => `0.01`, `:size` => `10_000`,                    | `void`      | Creates a new Station instance with specified configuration         |
-|                   | `:threads` => `Etc.nprocessors`, `:timeout` => `60`, `:flush_delay` => `1`          |             |                                                                     |
-| `bus`             |                                                                                     | `Bus`       | Returns the Bus instance                                            |
-| `interval`        |                                                                                     | `Float`     | Returns queue polling interval in seconds                           |
-| `size`            |                                                                                     | `Integer`   | Returns max queue size                                              |
-| `threads`         |                                                                                     | `Integer`   | Returns number of threads in use                                    |
-| `timeout`         |                                                                                     | `Float`     | Returns default timeout for message processing                      |
-| `start`           | `:interval` => `self.interval`, `:threads` => `self.threads`                        | `void`      | Starts the station                                                  |
-| `stop`            | `:timeout` => `nil`                                                                 | `void`      | Stops the station                                                   |
-| `running?`        |                                                                                     | `bool`      | Indicates if the station is running                                 |
-| `pending`         |                                                                                     | `Integer`   | Returns number of pending unprocessed messages                      |
-| `subscribe`       | `topic`, `:callable` => `nil`, `&block`                                             | `self`      | Subscribes a callable to a topic. Provide either callable or block. |
-| `unsubscribe`     | `topic`                                                                             | `self`      | Unsubscribes from a topic                                           |
-| `unsubscribe_all` | `topic`                                                                             | `self`      | Removes all subscribers from a topic                                |
-| `publish`         | `topic`, `:priority` => `1`, `:timeout` => `self.timeout`, `**payload`              | `Message`   | Publishes message to queue with optional priority and timeout       |
-| `publish_message` | `message`, `:priority` => `1`                                                       | `Message`   | Publishes a pre-constructed Message object to queue                 |
+<br>
+| Method            | Arguments                                                                                                              | Return    | Description                                                |
+|-------------------|------------------------------------------------------------------------------------------------------------------------|-----------|------------------------------------------------------------|
+| `initialize`      | `bus: Bus.new`<br> `interval: 0.01`<br> `limit: 10_000`<br> `threads: Etc.nprocessors`<br> `timeout: 60`<br> `wait: 5` | `void`    | Creates a new Station instance                             |
+| `bus`             |                                                                                                                        | `Bus`     | Bus instance                                               |
+| `interval`        |                                                                                                                        | `Float`   | Polling interval in seconds                                |
+| `limit`           |                                                                                                                        | `Integer` | Max number of pending messages                             |
+| `pending`         |                                                                                                                        | `Integer` | Number of unprocessed messages                             |
+| `publish_message` | `message`<br> `priority: 1`                                                                                            | `Message` | Publishes a pre-built Message                              |
+| `publish`         | `topic`<br> `priority: 1`<br> `timeout: self.timeout`<br> `**payload`                                                  | `Message` | Publishes a message                                        |
+| `running?`        |                                                                                                                        | `bool`    | Indicates if the station is running                        |
+| `start`           | `interval: self.interval`<br> `threads: self.threads`                                                                  | `void`    | Starts the station                                         |
+| `stop`            | `timeout: nil`                                                                                                         | `void`    | Stops the station                                          |
+| `subscribe`       | `topic`<br> `callable: nil`<br> `&block`                                                                               | `self`    | Subscribes to a topic _(Provide either callable or block)_ |
+| `threads`         |                                                                                                                        | `Integer` | Number of processing threads                               |
+| `timeout`         |                                                                                                                        | `Float`   | Timeout for individual message processing                  |
+| `unsubscribe_all` | `topic`                                                                                                                | `self`    | Removes all subscribers from a topic                       |
+| `unsubscribe`     | `topic`<br> `callable:`                                                                                                | `self`    | Unsubscribes from a topic                                  |
 
 </details>
 
 <details>
 <summary>Message</summary>
-
-| Method        | Arguments                                 | Return Type             | Description                                                     |
-| ------------- | ----------------------------------------- | ----------------------- | --------------------------------------------------------------- |
-| `initialize`  | `topic`, `:timeout` => `nil`, `**payload` | `Message`               | Creates a new Message instance with the given topic and payload |
-| `metadata`    |                                           | `Hash[Symbol, untyped]` | Returns message metadata                                        |
-| `id`          |                                           | `String`                | Returns unique identifier for the message                       |
-| `topic`       |                                           | `String`                | Returns message topic                                           |
-| `payload`     |                                           | `Hash`                  | Returns message payload                                         |
-| `created_at`  |                                           | `Time`                  | Returns time when message was created                           |
-| `thread_id`   |                                           | `Integer`               | Returns ID of thread that created the message                   |
-| `timeout`     |                                           | `Float`                 | Returns timeout for message processing in seconds               |
-| `wait`        | `:interval` => `0.1`                      | `void`                  | Blocks and waits for message to process                         |
-| `subscribers` |                                           | `Array[Subscriber]`     | Returns all subscribers after waiting for processing            |
-| `to_h`        |                                           | `Hash[Symbol, untyped]` | Converts message to a hash (alias for metadata)                 |
+<br>
+| Method        | Arguments                            | Return                  | Description                                              |
+| ------------- | -------------------------------------| ----------------------- | ---------------------------------------------------------|
+| `initialize`  | `topic`, `timeout: nil`, `**payload` | `Message`               | Creates a new Message instance                           |
+| `created_at`  |                                      | `Time`                  | Time message was created                                 |
+| `id`          |                                      | `String`                | Unique message identifier                                |
+| `metadata`    |                                      | `Hash[Symbol, untyped]` | Metadata _(thread info, etc.)_                           |
+| `payload`     |                                      | `Hash`                  | Message payload                                          |
+| `subscribers` |                                      | `Array[Subscriber]`     | Message subscribers _(waits for processing to complete)_ |
+| `thread_id`   |                                      | `Integer`               | Thread that created the message                          |
+| `timeout`     |                                      | `Float`                 | Timeout for processing in seconds _(all subscribers)_    |
+| `to_h`        |                                      | `Hash[Symbol, untyped]` | Hash representation of the message                       |
+| `topic`       |                                      | `String`                | Message topic                                            |
+| `wait`        | `interval: 0.1`                      | `void`                  | Blocks and waits for processing to complete              |
 
 </details>
-
 
 <details>
 <summary>Subscriber</summary>
-
-| Method            | Arguments             | Return Type               | Description                                                         |
-| ----------------- | --------------------- | ------------------------- | ------------------------------------------------------------------- |
-| `initialize`      | `callable`, `message` | `Subscriber`              | Creates a new Subscriber instance with a callable and message       |
-| `id`              |                       | `Integer`                 | Returns unique identifier for the subscriber                        |
-| `source_location` |                       | `Array[String, Integer]?` | Returns file and line number where callable was defined             |
-| `callable`        |                       | `#call`                   | Returns the callable object (Proc, lambda, etc.)                    |
-| `error`           |                       | `Error?`                  | Returns error if subscriber failed (after performing)               |
-| `message`         |                       | `Message`                 | Returns message for the subscriber to process                       |
-| `metadata`        |                       | `Hash[Symbol, untyped]`   | Returns metadata including timing, thread info, and message details |
-| `value`           |                       | `untyped`                 | Returns value returned by the callable (after performing)           |
-| `performed?`      |                       | `bool`                    | Indicates if the subscriber has been performed                      |
-| `pending?`        |                       | `bool`                    | Indicates if the subscriber is pending/unperformed                  |
-| `errored?`        |                       | `bool`                    | Indicates if the subscriber has errored                             |
-| `perform`         |                       | `void`                    | Performs the subscriber's callable                                  |
-| `timeout`         | `cause`               | `void`                    | Marks subscriber as timed out with given cause                      |
-| `to_h`            |                       | `Hash[Symbol, untyped]`   | Returns the subscriber's data as a hash                             |
+<br>
+| Method            | Arguments             | Return                    | Description                            |
+| ----------------- | --------------------- | ------------------------- | ---------------------------------------|
+| `initialize`      | `callable`, `message` | `Subscriber`              | Creates a new Subscriber instance      |
+| `callable`        |                       | `#call`                   | Callable object _(Proc, lambda, etc.)_ |
+| `error`           |                       | `Error?`                  | Error, if subscriber failed            |
+| `errored?`        |                       | `bool`                    | Indicates if the subscriber errored    |
+| `id`              |                       | `Integer`                 | Unique subscriber identifier           |
+| `message`         |                       | `Message`                 | Message being handled                  |
+| `metadata`        |                       | `Hash[Symbol, untyped]`   | Metadata _(thread info, etc.)_         |
+| `pending?`        |                       | `bool`                    | Indicates if unperformed               |
+| `perform`         |                       | `void`                    | Executes the callable                  |
+| `performed?`      |                       | `bool`                    | Indicates if performed                 |
+| `source_location` |                       | `Array[String, Integer]?` | File and line number of callable       |
+| `timeout`         | `cause`               | `void`                    | Marks subscriber as timed out          |
+| `to_h`            |                       | `Hash[Symbol, untyped]`   | Hash representation of the subscriber  |
+| `value`           |                       | `untyped`                 | Value returned by the callable         |
 
 </details>
-
-### Logging and Monitoring
-
-Implement a centralized logging system where different components can log messages to a single location.
-
-```ruby
-bus = LocalBus::Bus.new
-
-# Subscribe to log events
-bus.subscribe "log.info" do |message|
-  LoggerService.log_info(message.payload[:message])
-end
-
-# Publish a log event
-bus.publish("log.info", message: "User logged in")
-```
-
-These examples demonstrate how LocalBus can be used to build efficient, decoupled, and maintainable applications. By leveraging LocalBus, developers can streamline communication between components and improve the overall architecture of their systems.
 
 ## See Also
 

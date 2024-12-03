@@ -1,7 +1,13 @@
 # Generated from lib/local_bus/bus.rb with RBS::Inline
 
 class LocalBus
-  # Local in-process single threaded "message bus" with non-blocking I/O
+  # The Bus acts as a direct transport mechanism for messages, akin to placing a passenger directly onto a bus.
+  # When a message is published to the Bus, it is immediately delivered to all subscribers, ensuring prompt execution of tasks.
+  # This is achieved through non-blocking I/O operations, which allow the Bus to handle multiple tasks efficiently without blocking the main thread.
+  #
+  # @note While the Bus uses asynchronous operations to optimize performance,
+  #       the actual processing of a message may still experience slight delays due to I/O wait times from prior messages.
+  #       This means that while the Bus aims for immediate processing, the nature of asynchronous operations can introduce some latency.
   class Bus
     include MonitorMixin
 
@@ -51,7 +57,7 @@ class LocalBus
     # @rbs block: (String) -> void -- block to execute (yields the topic)
     def with_topic: (String topic) ?{ (?) -> untyped } -> untyped
 
-    # Publishes a message to a topic
+    # Publishes a message
     #
     # @note If subscribers are rapidly created/destroyed mid-publish, there's a theoretical
     #       possibility of object_id reuse. However, this is extremely unlikely in practice.
@@ -69,7 +75,7 @@ class LocalBus
     # @rbs return: Message
     def publish: (String topic, ?timeout: Float, **untyped payload) -> Message
 
-    # Publishes a message to the queue
+    # Publishes a pre-built message
     # @rbs message: Message -- message to publish
     # @rbs return: Message
     def publish_message: (Message message) -> Message

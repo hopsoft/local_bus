@@ -12,7 +12,6 @@ jobs:
     env:
       TERM: xterm-256color
       BM: "true"
-      TESTOPTS: "--verbose"
     strategy:
       matrix:
         ruby-version: ["3.3"]
@@ -28,14 +27,6 @@ jobs:
 
       - name: Install dependencies
         run: bundle install
-
-      - name: System information
-        run: |
-          ruby -v
-          bundle -v
-          free -h
-          nproc
-          lscpu
 
       - name: Run tests
         run: bundle exec rake --trace

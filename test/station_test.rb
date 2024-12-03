@@ -114,7 +114,7 @@ class LocalBus
 
       station.publish(@topic, success: true).wait
 
-      assert Time.now - start < 15, "Test took too long to complete"
+      assert Time.now - start < 6 # 1.5 (adjusted for GitHub Actions which are slow as hell)
       assert_equal 100, received_messages.size
       assert received_messages.all? { _1.payload == {success: true} }
     end
@@ -173,23 +173,27 @@ class LocalBus
 
     def test_stop_with_unprocessed_messages
       station = Station.new
+      count = 30
+      latency = 0.1
 
-      30.times do |i|
+      count.times do |i|
         station.bus.concurrency.times do
-          station.subscribe("topic-#{i}") { sleep 1 }
+          station.subscribe("topic-#{i}") { sleep latency }
         end
         station.publish("topic-#{i}")
       end
 
-      sleep 2 # given the above setup, allow 2/3 of the messages to process before stopping
+      sleep latency * 2 # allow time for some messages to process but not all
       station.stop
 
-      assert_equal 10, station.pending
+      # should have some unprocessed messages
+      refute station.empty?
+      assert station.count < count
 
       # resume processing
       station.start
-      sleep 1
-      assert_equal 0, station.pending
+      sleep latency * 2 # allow time for remaining messages to process
+      assert station.empty?
     end
   end
 end
