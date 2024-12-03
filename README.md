@@ -10,6 +10,9 @@
 
 ### A lightweight single-process pub/sub system that enables clean, decoupled interactions.
 
+> [!TIP]
+> LocalBus is implemented in under 400 lines of code, making it easy to review and understand the implementation details and internals.
+
 ## Why LocalBus?
 
 A message bus (or enterprise service bus) is an architectural pattern that enables different parts of an application to communicate without direct knowledge of each other.
@@ -56,7 +59,6 @@ Even within a single process, this pattern offers powerful benefits:
     - [Shutdown & Cleanup](#shutdown--cleanup)
     - [Limitations](#limitations)
     - [Demos & Benchmarks](#demos--benchmarks)
-  - [Interfaces](#interfaces)
   - [See Also](#see-also)
 
 <!-- Tocer[finish]: Auto-generated, don't remove. -->
@@ -381,91 +383,6 @@ Both demos simulate I/O-bound operations _(1 second latency per subscriber)_ to 
 - The Station processes 10 messages with 10 I/O-bound subscribers each in ~1 second instead of 100 seconds
 
 This demonstrates how LocalBus offers high throughput for I/O-bound operations. :raised_hands:
-
-## Interfaces
-
-<details>
-<summary>Bus</summary>
-<br>
-| Method            | Arguments                                                                           | Return                          | Description                                                 |
-|-------------------|-------------------------------------------------------------------------------------|---------------------------------|-------------------------------------------------------------|
-| `initialize`      | `concurrency: Etc.nprocessors`                                                      | `Bus`                           | Creates a new Bus instance                                  |
-| `concurrency=`    | `value`                                                                             | `Integer`                       | Sets the max concurrency                                    |
-| `concurrency`     |                                                                                     | `Integer`                       | Maximum number of concurrent tasks                          |
-| `publish_message` | `message`<br> `priority: 1`                                                         | `Message`                       | Publishes a pre-built Message                               |
-| `publish`         | `topic`<br> `timeout 60`<br> `**payload`                                            | `Message`                       | Publishes a message                                         |
-| `subscribe`       | `topic`<br> `callable: nil`<br> `&block`                                            | `self`                          | Subscribes to a topic. _(Provide either callable or block)_ |
-| `subscriptions`   |                                                                                     | `Hash[String, Array[callable]]` | Registered Topics and their subscribers                     |
-| `topics`          |                                                                                     | `Array[String]`                 | Registered topic names                                      |
-| `unsubscribe_all` | `topic`                                                                             | `self`                          | Removes all subscribers from a topic                        |
-| `unsubscribe`     | `topic`<br> `callable:`                                                             | `self`                          | Unsubscribes from a topic                                   |
-| `with_topic`      | `topic`<br> `&block`                                                                | `void`                          | Executes block with a topic and unsubscribes all when done  |
-
-</details>
-
-<details>
-<summary>Station</summary>
-<br>
-| Method            | Arguments                                                                                                              | Return    | Description                                                |
-|-------------------|------------------------------------------------------------------------------------------------------------------------|-----------|------------------------------------------------------------|
-| `initialize`      | `bus: Bus.new`<br> `interval: 0.01`<br> `limit: 10_000`<br> `threads: Etc.nprocessors`<br> `timeout: 60`<br> `wait: 5` | `void`    | Creates a new Station instance                             |
-| `bus`             |                                                                                                                        | `Bus`     | Bus instance                                               |
-| `interval`        |                                                                                                                        | `Float`   | Polling interval in seconds                                |
-| `limit`           |                                                                                                                        | `Integer` | Max number of pending messages                             |
-| `pending`         |                                                                                                                        | `Integer` | Number of unprocessed messages                             |
-| `publish_message` | `message`<br> `priority: 1`                                                                                            | `Message` | Publishes a pre-built Message                              |
-| `publish`         | `topic`<br> `priority: 1`<br> `timeout: self.timeout`<br> `**payload`                                                  | `Message` | Publishes a message                                        |
-| `running?`        |                                                                                                                        | `bool`    | Indicates if the station is running                        |
-| `start`           | `interval: self.interval`<br> `threads: self.threads`                                                                  | `void`    | Starts the station                                         |
-| `stop`            | `timeout: nil`                                                                                                         | `void`    | Stops the station                                          |
-| `subscribe`       | `topic`<br> `callable: nil`<br> `&block`                                                                               | `self`    | Subscribes to a topic _(Provide either callable or block)_ |
-| `threads`         |                                                                                                                        | `Integer` | Number of processing threads                               |
-| `timeout`         |                                                                                                                        | `Float`   | Timeout for individual message processing                  |
-| `unsubscribe_all` | `topic`                                                                                                                | `self`    | Removes all subscribers from a topic                       |
-| `unsubscribe`     | `topic`<br> `callable:`                                                                                                | `self`    | Unsubscribes from a topic                                  |
-
-</details>
-
-<details>
-<summary>Message</summary>
-<br>
-| Method        | Arguments                            | Return                  | Description                                              |
-| ------------- | -------------------------------------| ----------------------- | ---------------------------------------------------------|
-| `initialize`  | `topic`, `timeout: nil`, `**payload` | `Message`               | Creates a new Message instance                           |
-| `created_at`  |                                      | `Time`                  | Time message was created                                 |
-| `id`          |                                      | `String`                | Unique message identifier                                |
-| `metadata`    |                                      | `Hash[Symbol, untyped]` | Metadata _(thread info, etc.)_                           |
-| `payload`     |                                      | `Hash`                  | Message payload                                          |
-| `subscribers` |                                      | `Array[Subscriber]`     | Message subscribers _(waits for processing to complete)_ |
-| `thread_id`   |                                      | `Integer`               | Thread that created the message                          |
-| `timeout`     |                                      | `Float`                 | Timeout for processing in seconds _(all subscribers)_    |
-| `to_h`        |                                      | `Hash[Symbol, untyped]` | Hash representation of the message                       |
-| `topic`       |                                      | `String`                | Message topic                                            |
-| `wait`        | `interval: 0.1`                      | `void`                  | Blocks and waits for processing to complete              |
-
-</details>
-
-<details>
-<summary>Subscriber</summary>
-<br>
-| Method            | Arguments             | Return                    | Description                            |
-| ----------------- | --------------------- | ------------------------- | ---------------------------------------|
-| `initialize`      | `callable`, `message` | `Subscriber`              | Creates a new Subscriber instance      |
-| `callable`        |                       | `#call`                   | Callable object _(Proc, lambda, etc.)_ |
-| `error`           |                       | `Error?`                  | Error, if subscriber failed            |
-| `errored?`        |                       | `bool`                    | Indicates if the subscriber errored    |
-| `id`              |                       | `Integer`                 | Unique subscriber identifier           |
-| `message`         |                       | `Message`                 | Message being handled                  |
-| `metadata`        |                       | `Hash[Symbol, untyped]`   | Metadata _(thread info, etc.)_         |
-| `pending?`        |                       | `bool`                    | Indicates if unperformed               |
-| `perform`         |                       | `void`                    | Executes the callable                  |
-| `performed?`      |                       | `bool`                    | Indicates if performed                 |
-| `source_location` |                       | `Array[String, Integer]?` | File and line number of callable       |
-| `timeout`         | `cause`               | `void`                    | Marks subscriber as timed out          |
-| `to_h`            |                       | `Hash[Symbol, untyped]`   | Hash representation of the subscriber  |
-| `value`           |                       | `untyped`                 | Value returned by the callable         |
-
-</details>
 
 ## See Also
 
