@@ -12,7 +12,8 @@
 
 ## Why LocalBus?
 
-A message bus (or enterprise service bus) is an architectural pattern that enables different parts of an application to communicate without direct knowledge of each other. Think of it as a smart postal service for your application - components can send messages to topics, and other components can listen for those messages, all without knowing about each other directly.
+A message bus (or enterprise service bus) is an architectural pattern that enables different parts of an application to communicate without direct knowledge of each other.
+Think of it as a smart postal service for your application - components can send messages to topics, and other components can listen for those messages, all without knowing about each other directly.
 
 Even within a single process, this pattern offers powerful benefits:
 
@@ -169,9 +170,11 @@ Messages can also be prioritized, ensuring that higher-priority tasks are proces
 
 ### LocalBus
 
-The LocalBus class serves as the primary interface to the library, providing a convenient singleton pattern for accessing both Bus and Station functionality. It maintains default instances of both components and exposes a simplified API for common pub/sub operations.
+The LocalBus class serves as the primary interface to the library, providing a convenient singleton pattern for accessing both Bus and Station functionality.
+It exposes singleton instances of both Bus and Station providing a simplified API for common pub/sub operations.
 
-By default, LocalBus delegates to the Station for all pub/sub operations, making it ideal for background processing scenarios. This means that when you use `LocalBus.publish` or `LocalBus.subscribe`, you're actually working with default Station, benefiting from its queuing and thread pool capabilities.
+By default, LocalBus delegates to the Station singleton for all pub/sub operations, making it ideal for background processing scenarios.
+This means that when you use `LocalBus.publish` or `LocalBus.subscribe`, you're actually working with default Station, benefiting from its queuing and thread pool capabilities.
 
 ## Installation
 
