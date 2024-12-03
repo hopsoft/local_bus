@@ -362,7 +362,7 @@ This delay can be configured via the `:wait` option in the constructor (default:
 
 - The Bus is single-threaded - long-running or CPU-bound subscribers can impact latency
 - The Station may drop messages at process exit _(messages are not persisted between process restarts)_
-- No distributed support - the message broker is limited to single process _(intra-process)_
+- No distributed support - limited to single process _(intra-process)_
 - Large message payloads may impact memory usage, especially under high load
 - No built-in retry mechanism for failed subscribers _(subscribers expose an error property, but you'll need to check and handle such errors)_
 
