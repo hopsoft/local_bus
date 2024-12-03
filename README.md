@@ -375,7 +375,7 @@ bin/demo-bus     # demonstrates Bus performance
 bin/demo-station # demonstrates Station performance
 ```
 
-Both demos simulate I/O-bound operations _(1 second latency)_ to show how LocalBus handles concurrent processing. For example, on an 10-core system:
+Both demos simulate I/O-bound operations _(1 second latency per subscriber)_ to show how LocalBus handles concurrent processing. For example, on an 10-core system:
 
 - The Bus processes a message with 10 I/O-bound subscribers in ~1 second instead of 10 seconds
 - The Station processes 10 messages with 10 I/O-bound subscribers each in ~1 second instead of 100 seconds
