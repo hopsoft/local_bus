@@ -1,54 +1,14 @@
-<p align="center">
-  <a href="http://blog.codinghorror.com/the-best-code-is-no-code-at-all/">
-    <img alt="Lines of Code" src="https://img.shields.io/badge/loc-328-47d299.svg" />
-  </a>
-  <a href="https://rubygems.org/gems/local_bus">
-    <img alt="GEM Version" src="https://img.shields.io/gem/v/local_bus">
-  </a>
-  <a href="https://rubygems.org/gems/local_bus">
-    <img alt="GEM Downloads" src="https://img.shields.io/gem/dt/local_bus">
-  </a>
-  <a href="https://github.com/hopsoft/local_bus/actions">
-    <img alt="Tests" src="https://github.com/hopsoft/local_bus/actions/workflows/tests.yml/badge.svg" />
-  </a>
-  <a href="https://github.com/testdouble/standard">
-    <img alt="Ruby Style" src="https://img.shields.io/badge/style-standard-168AFE?logo=ruby&logoColor=FE1616" />
-  </a>
-  <a href="https://github.com/sponsors/hopsoft">
-    <img alt="Sponsors" src="https://img.shields.io/github/sponsors/hopsoft?color=eb4aaa&logo=GitHub%20Sponsors" />
-  </a>
-  <a href="https://twitter.com/hopsoft">
-    <img alt="Twitter Follow" src="https://img.shields.io/twitter/url?label=%40hopsoft&style=social&url=https%3A%2F%2Ftwitter.com%2Fhopsoft">
-  </a>
-</p>
+[![Lines of Code](https://img.shields.io/badge/loc-364-47d299.svg)](http://blog.codinghorror.com/the-best-code-is-no-code-at-all/)
+[![GEM Version](https://img.shields.io/gem/v/local_bus)](https://rubygems.org/gems/local_bus)
+[![GEM Downloads](https://img.shields.io/gem/dt/local_bus)](https://rubygems.org/gems/local_bus)
+[![Tests](https://github.com/hopsoft/local_bus/actions/workflows/tests.yml/badge.svg)](https://github.com/hopsoft/local_bus/actions)
+[![Ruby Style](https://img.shields.io/badge/style-standard-168AFE?logo=ruby&logoColor=FE1616)](https://github.com/testdouble/standard)
+[![Sponsors](https://img.shields.io/github/sponsors/hopsoft?color=eb4aaa&logo=GitHub%20Sponsors)](https://github.com/sponsors/hopsoft)
+[![Twitter Follow](https://img.shields.io/twitter/url?label=%40hopsoft&style=social&url=https%3A%2F%2Ftwitter.com%2Fhopsoft)](https://twitter.com/hopsoft)
 
 # LocalBus
 
-LocalBus is a lightweight pub/sub system for Ruby that helps organize and simplify intra-process communication.
-
-<!-- Tocer[start]: Auto-generated, don't remove. -->
-
-## Table of Contents
-
-  - [Why LocalBus?](#why-localbus)
-  - [Installation](#installation)
-  - [Quick Start](#quick-start)
-    - [Interfaces](#interfaces)
-    - [Bus (immediate processing)](#bus-immediate-processing)
-    - [Station (background processing)](#station-background-processing)
-  - [Advanced Usage & Considerations](#advanced-usage--considerations)
-    - [Concurrency Controls](#concurrency-controls)
-      - [Bus Interface (Async)](#bus-interface-async)
-      - [Station Interface (Thread Pool)](#station-interface-thread-pool)
-    - [Error Handling & Recovery](#error-handling--recovery)
-    - [Memory Considerations](#memory-considerations)
-    - [Blocking Operations](#blocking-operations)
-    - [Shutdown & Cleanup](#shutdown--cleanup)
-    - [Limitations](#limitations)
-  - [See Also](#see-also)
-  - [Sponsors](#sponsors)
-
-<!-- Tocer[finish]: Auto-generated, don't remove. -->
+### A lightweight single-process pub/sub system that enables clean, decoupled interactions.
 
 ## Why LocalBus?
 
@@ -64,237 +24,429 @@ Even within a single process, this pattern offers powerful benefits:
 - **Stay Reliable**: Built-in error handling and thread safety
 - **Non-Blocking**: Efficient message processing with async I/O
 
+<!-- Tocer[start]: Auto-generated, don't remove. -->
+
+## Table of Contents
+
+- [Key Benefits](#key-benefits)
+  - [Performance and Efficiency](#performance-and-efficiency)
+  - [Ease of Use](#ease-of-use)
+  - [Decoupling and Modularity](#decoupling-and-modularity)
+  - [Reliability and Safety](#reliability-and-safety)
+- [Use Cases](#use-cases)
+- [Key Components](#key-components)
+  - [Bus](#bus)
+  - [Station](#station)
+  - [LocalBus](#localbus)
+- [Installation](#installation)
+- [Usage](#usage)
+  - [LocalBus](#localbus-1)
+  - [Bus](#bus-1)
+  - [Station](#station-1)
+- [Advanced Usage](#advanced-usage)
+  - [Concurrency Controls](#concurrency-controls)
+    - [Bus](#bus-2)
+    - [Station](#station-2)
+      - [Message Priority](#message-priority)
+  - [Error Handling](#error-handling)
+  - [Memory Considerations](#memory-considerations)
+  - [Blocking Operations](#blocking-operations)
+  - [Shutdown & Cleanup](#shutdown--cleanup)
+  - [Limitations](#limitations)
+- [Interfaces](#interfaces)
+- [See Also](#see-also)
+
+<!-- Tocer[finish]: Auto-generated, don't remove. -->
+
+## Key Benefits
+
+LocalBus offers several advantages that make it an attractive choice for Ruby developers looking to implement a pub/sub system within a single process:
+
+### Performance and Efficiency
+
+- **Non-Blocking I/O:** Leveraging the power of the `Async` library, LocalBus ensures efficient message processing without blocking the main thread, leading to improved performance in I/O-bound applications.
+- **Optimized Resource Usage:** By using semaphores and thread pools, LocalBus efficiently manages system resources, allowing for high concurrency without overwhelming the system.
+
+### Ease of Use
+
+- **Simple Setup:** With straightforward installation and intuitive API, LocalBus allows developers to quickly integrate pub/sub capabilities into their applications.
+- **Minimal Configuration:** Default settings are optimized for most use cases, reducing the need for complex configurations.
+
+### Decoupling and Modularity
+
+- **Component Isolation:** LocalBus enables clean separation of concerns by allowing components to communicate through messages without direct dependencies or tight coupling.
+- **Scalable Architecture:** Easily extend your application by adding new subscribers to existing topics, facilitating the addition of new features without modifying existing code.
+
+### Reliability and Safety
+
+- **Built-in Error Handling:** LocalBus includes error boundaries to ensure that failures in one subscriber do not affect others, maintaining system stability.
+- **Thread Safety:** Designed with concurrency in mind, LocalBus provides thread-safe operations to prevent race conditions and ensure data integrity.
+
+## Use Cases
+
+LocalBus is versatile and can be applied to various scenarios within a Ruby application. Here are some common use cases and examples:
+
+<details>
+<summary><b>Decoupled Communication</b></summary>
+<br>
+Facilitate communication between different parts of a component-based architecture without tight coupling.
+
+```ruby
+# Component A subscribes to order creation events
+LocalBus.subscribe "order.created" do |message|
+  InventoryService.update_stock message.payload[:order_id]
+end
+
+# Component B publishes an order creation event
+LocalBus.publish "order.created", order_id: 789
+```
+
+</details>
+
+<details>
+<summary><b>Real-Time Notifications</b></summary>
+<br>
+Use LocalBus to send real-time notifications to users when specific events occur, such as user sign-ups or order completions.
+
+```ruby
+# Subscribe to user sign-up events
+LocalBus.subscribe "user.signed_up" do |message|
+  NotificationService.send_welcome_email message.payload[:user_id]
+end
+
+# Publish a user sign-up event
+LocalBus.publish "user.signed_up", user_id: 123
+```
+
+</details>
+
+<details>
+<summary><b>Background Processing</b></summary>
+<br>
+Offload non-critical tasks to be processed in the background, such as sending emails or generating reports.
+
+```ruby
+# Subscribe to report generation requests
+LocalBus.subscribe "report.generate" do |message|
+  ReportService.generate message.payload[:report_id]
+end
+
+# Publish a report generation request
+LocalBus.publish "report.generate", report_id: 456
+```
+
+</details>
+
+## Key Components
+
+### Bus
+
+The Bus acts as a direct transport mechanism for messages, akin to placing a passenger directly onto a bus.
+When a message is published to the Bus, it is immediately delivered to all subscribers, ensuring prompt execution of tasks.
+This is achieved through non-blocking I/O operations, which allow the Bus to handle multiple tasks efficiently without blocking the main thread.
+
+> [!NOTE]
+> While the Bus uses asynchronous operations to optimize performance,
+> the actual processing of a message may still experience slight delays due to I/O wait times from prior messages.
+> This means that while the Bus aims for immediate processing, the nature of asynchronous operations can introduce some latency.
+
+### Station
+
+The Station serves as a queuing system for messages, similar to a bus station where passengers wait for their bus.
+
+When a message is published to the Station, it is queued and processed at a later time, allowing for deferred execution.
+This is particularly useful for tasks that can be handled later.
+
+The Station employs a thread pool to manage message processing, enabling high concurrency and efficient resource utilization.
+Messages can also be prioritized, ensuring that higher-priority tasks are processed first.
+
+> [!NOTE]
+> While the Station provides a robust mechanism for background processing,
+> it's important to understand that the exact timing of message processing is not controlled by the publisher,
+> and messages will be processed as resources become available.
+
+### LocalBus
+
+The LocalBus class serves as the primary interface to the library, providing a convenient singleton pattern for accessing both Bus and Station functionality. It maintains default instances of both components and exposes a simplified API for common pub/sub operations.
+
+By default, LocalBus delegates to the Station for all pub/sub operations, making it ideal for background processing scenarios. This means that when you use `LocalBus.publish` or `LocalBus.subscribe`, you're actually working with default Station, benefiting from its queuing and thread pool capabilities.
+
 ## Installation
 
-```sh
+```bash
 bundle add local_bus
 ```
 
-## Quick Start
+### Requirements
 
-### Interfaces
+- Ruby `>= 3.0`
 
-- **Bus**: Single-threaded, immediate message delivery using Socketry Async with non-blocking I/O operations
-- **Station**: Multi-threaded message queuing powered by Concurrent Ruby's thread pool, processing messages through the Bus without blocking the main thread
+## Usage
 
-Both interfaces ensure optimal performance:
+### LocalBus
 
-- Bus leverages async I/O to prevent blocking on network or disk operations
-- Station offloads work to a managed thread pool, keeping the main thread responsive
-- Both interfaces support an explicit `wait` for subscribers
+```ruby
+LocalBus.subscribe "user.created" do |message|
+  # business logic (e.g. API calls, database queries, disk operations, etc.)
+  "It worked!"
+end
 
-### Bus (immediate processing)
+message = LocalBus.publish("user.created", user_id: 123)
+message.wait        # blocks until all subscribers complete
+message.subscribers # blocks and waits until all subscribers complete and returns the subscribers
+#=> [#<LocalBus::Subscriber:0x0000000120f75c30 ...>]
 
-Best for real-time operations like logging, metrics, and state updates.
+message.subscribers.first.value
+#=> "It worked!"
+```
+
+### Bus
 
 ```ruby
 bus = LocalBus::Bus.new # ... or LocalBus.instance.bus
 
+# register a subscriber
 bus.subscribe "user.created" do |message|
-  AuditLog.record(message.payload)
-  true
+  # business logic (e.g. API calls, database queries, disk operations, etc.)
 end
 
-# publish returns a promise-like object that resolves to subscribers
-result = bus.publish("user.created", user_id: 123)
+message = bus.publish("user.created", user_id: 123)
+message.wait        # blocks until all subscribers complete
+message.subscribers # waits and returns the subscribers
+#=> [#<LocalBus::Subscriber:0x000000012bbb79a8 ...>]
 
-result.wait  # blocks until all subscribers complete
-result.value # blocks and waits until all subscribers complete and returns the subscribers
-```
-
-Subscribe with an explicit `callable`.
-
-```ruby
-callable = ->(message) { "Received message: #{message.payload}" }
-LocalBus.instance.bus.subscribe "user.created", callable: callable
-
-subscribers = LocalBus.instance.bus.publish("user.created", user_id: 123).value
-# => [#<LocalBus::Subscriber:0x0000000126b7cf38 ...>]
-
-subscribers.first.value
-# => "Received message: {:user_id=>123}"
-
-# you can use any object that responds to #call
-class ExampleCallable
-  def call(message)
-    "Received message: #{message.payload}"
-  end
+# subscribe with any object that responds to `#call`.
+worker = ->(message) do
+  # business logic (e.g. API calls, database queries, disk operations, etc.)
+  "It worked!"
 end
-
-LocalBus.instance.bus.subscribe "user.created", callable: ExampleCallable.new
-subscribers = LocalBus.instance.bus.publish("user.created", user_id: 123).value
-# => [#<LocalBus::Subscriber:0x0000000126b7cf38 ...>]
-
-subscribers.first.value
-# => "Received message: {:user_id=>123}"
+bus.subscribe "user.created", callable: worker
 ```
 
-### Station (background processing)
-
-Best for async operations like emails, notifications, and resource-intensive tasks.
+### Station
 
 ```ruby
 station = LocalBus::Station.new # ... or LocalBus.instance.station
 
-station.subscribe "email.welcome" do |message|
-  WelcomeMailer.deliver(message.payload[:user_id])
-  true
+station.subscribe "user.created" do |message|
+  # business logic (e.g. API calls, database queries, disk operations, etc.)
+  "It worked!"
 end
 
-# Returns a Promise or Future that resolves to subscribers
-result = station.publish("email.welcome", user_id: 123)
+message = station.publish("user.created", user_id: 123)
+message.wait        # blocks until all subscribers complete
+message.subscribers # blocks and waits until all subscribers complete and returns the subscribers
+#=> [#<LocalBus::Subscriber:0x00000001253156e8 ...>]
 
-result.wait  # blocks until all subscribers complete
-result.value # blocks and waits until all subscribers complete and returns the subscribers
-```
+message.subscribers.first.value
+#=> "It worked!"
 
-Subscribe with an explicit `callable`.
-
-```ruby
-callable = ->(message) { "Received message: #{message.payload}" }
-LocalBus.instance.station.subscribe "email.welcome", callable: callable
-
-subscribers = LocalBus.instance.station.publish("email.welcome", user_id: 123).value
-# => [#<LocalBus::Subscriber:0x0000000126b7cf38 ...>]
-
-subscribers.first.value
-# => "Received message: {:user_id=>123}"
-
-# you can use any object that responds to #call
-class ExampleCallable
-  def call(message)
-    "Received message: #{message.payload}"
-  end
+# subscribe with any object that responds to `#call`.
+worker = ->(message) do
+  # business logic (e.g. API calls, database queries, disk operations, etc.)
+  "It worked!"
 end
-
-LocalBus.instance.station.subscribe "email.welcome", callable: ExampleCallable.new
-subscribers = LocalBus.instance.station.publish("email.welcome", user_id: 123).value
-# => [#<LocalBus::Subscriber:0x0000000126b7cf38 ...>]
-
-subscribers.first.value
-# => "Received message: {:user_id=>123}"
+station.subscribe "user.created", callable: worker
 ```
 
-## Advanced Usage & Considerations
+## Advanced Usage
 
 ### Concurrency Controls
 
-#### Bus Interface (Async)
+#### Bus
 
-The Bus interface uses Async's Semaphore to limit resource consumption:
+The Bus leverages Async's Semaphore to limit resource consumption.
+The configured `concurrency` limits how many operations can run at once.
 
 ```ruby
-# Configure concurrency limits for the Bus
-bus = LocalBus::Bus.new(max_concurrency: 10)
-
-# The semaphore ensures only N concurrent operations run at once
-bus.subscribe "resource.intensive" do |message|
-  # Only 10 of these will run concurrently
-  perform_intensive_operation(message)
-end
+# Configure concurrency limits for the Bus (default: Etc.nprocessors)
+bus = LocalBus::Bus.new(concurrency: 10)
 ```
 
-When the max concurrency limit is reached, new publish operations will wait until a slot becomes available. This prevents memory bloat but means you should be mindful of timeouts in your subscribers.
+> [!NOTE]
+> When the max concurrency limit is reached, new publish operations will wait until a slot becomes available.
+> This helps to ensure we don't over utilize system resources.
 
-#### Station Interface (Thread Pool)
+#### Station
 
-The Station interface uses Concurrent Ruby's fixed thread pool with a fallback policy:
+The Station uses a thread pool for multi-threaded message processing.
+You can configure the queue size and the number of threads used to process messages.
 
 ```ruby
-# Configure the thread pool size for the Station
+# Configure the Station
 station = LocalBus::Station.new(
-  max_queue: 5_000, # Maximum number of queued items
-  max_threads: 10, # Maximum pool size
-  fallback_policy: :caller_runs # Runs on calling thread
+  limit: 5_000, # max number of pending messages (default: 10_000)
+  threads: 10,  # max number of processing threads (default: Etc.nprocessors)
 )
 ```
 
-The fallback policy determines behavior when the thread pool is saturated:
+##### Message Priority
 
-- `:caller_runs` - Executes the task in the publishing thread (can block)
-- `:abort` - Raises an error
-- `:discard` - Silently drops the task
-
-### Error Handling & Recovery
-
-Both interfaces implement error boundaries to prevent individual subscriber failures from affecting others:
+The Station supports assigning a priority to each message.
+Messages with a higher priority are processed before lower priority messages.
 
 ```ruby
-bus.subscribe "user.created" do |message|
+LocalBus.publish("default")                # 3rd to process
+LocalBus.publish("important", priority: 5) # 2nd to process
+LocalBus.publish("critical", priority: 10) # 1st to process
+```
+
+### Error Handling
+
+Error boundaries prevent individual subscriber failures from affecting other subscribers.
+
+```ruby
+LocalBus.subscribe "user.created" do |message|
   raise "Something went wrong!"
-  true # Never reached
+  # never reached (business logic...)
 end
 
-bus.subscribe "user.created" do |message|
-  # This still executes despite the error above
-  notify_admin(message)
-  true
+LocalBus.subscribe "user.created" do |message|
+  # This still executes even though the other subscriber has an error
+  # business logic (e.g. API calls, database queries, disk operations, etc.)
 end
 
 # The publish operation completes with partial success
-result = bus.publish("user.created", user_id: 123)
-result.wait
-errored_subscribers = result.value.select(&:error)
+message = LocalBus.publish("user.created", user_id: 123)
+errored_subscribers = message.subscribers.select(&:errored?)
+#=> [#<LocalBus::Subscriber:0x000000011ebbcaf0 ...>]
+
+errored_subscribers.first.error
+#=> #<LocalBus::Subscriber::Error: Invocation failed! Something went wrong!>
 ```
+
+> [!IMPORTANT]
+> It's up to you to check message subscribers and handle errors appropriately.
 
 ### Memory Considerations
 
-Messages are held in memory until all subscribers complete processing. For the Station interface, this includes time spent in the thread pool queue. Consider this when publishing large payloads or during high load:
+Messages are held in memory until all subscribers have completed.
+Consider this when publishing large payloads or during high load scenarios.
 
 ```ruby
-# Memory-efficient publishing of large datasets
+# memory-efficient publishing of large datasets
 large_dataset.each_slice(100) do |batch|
-  station.publish("data.process", items: batch).wait
+  message = LocalBus.publish("data.process", items: batch)
+  message.wait # wait before processing more messages
 end
 ```
 
 ### Blocking Operations
 
-The Bus interface uses non-blocking I/O but can still be blocked by CPU-intensive operations:
+LocalBus facilitates non-blocking I/O but bottlenecks can still be triggered by CPU-intensive operations.
 
 ```ruby
-# Bad - blocks the event loop
-bus.subscribe "cpu.intensive" do |message|
-  perform_heavy_calculation(message)
-end
-
-# Better - offload to Station for CPU-intensive work
-station.subscribe "cpu.intensive" do |message|
-  perform_heavy_calculation(message)
+LocalBus.subscribe "cpu.intensive" do |message|
+  # CPU bound operation can trigger a bottleneck
 end
 ```
 
 ### Shutdown & Cleanup
 
-LocalBus does its best to handle graceful shutdown when the process exits, and works to ensure published messages are processed.
-However, it's possible that some messages may be lost when the process exits.
+The Station delays process exit in an attempt to flush the queue and avoid dropped messages.
+This delay can be configured via the `:wait` option in the constructor (default: 5).
 
-Factor for potential message loss when designing your system.
-For example, idempotency _(i.e. messages that can be re-published without unintended side effects)_.
+> [!IMPORTANT]
+> This wait allows some time for processing pending messages at exit, but this is not guaranteed.
+> Factor for potential message loss when designing your system.
+> For example, idempotency _i.e. messages that can be re-published without unintended side effects_.
 
 ### Limitations
 
-- The Bus interface is single-threaded - long-running subscribers can impact latency
-- The Station interface may drop messages if configured with `:discard` fallback policy
-- No persistence - pending messages may be lost on process restart
-- No distributed support - communication limited to single process
-- Large payloads can impact memory usage, especially under high load
-- No built-in retry mechanism for failed subscribers
+- The Bus is single-threaded - long-running or CPU-bound subscribers can impact latency
+- The Station may drop messages at process exit _(messages are not persisted between process restarts)_
+- No distributed support - the message broker is limited to single process _(intra-process)_
+- Large message payloads may impact memory usage, especially under high load
+- No built-in retry mechanism for failed subscribers _(subscribers expose an error property, but you'll need to check and handle such errors)_
 
 Consider these limitations when designing your system architecture.
+
+## Interfaces
+
+<details>
+<summary>Bus</summary>
+<br>
+| Method            | Arguments                                                                           | Return                          | Description                                                 |
+|-------------------|-------------------------------------------------------------------------------------|---------------------------------|-------------------------------------------------------------|
+| `initialize`      | `concurrency: Etc.nprocessors`                                                      | `Bus`                           | Creates a new Bus instance                                  |
+| `concurrency=`    | `value`                                                                             | `Integer`                       | Sets the max concurrency                                    |
+| `concurrency`     |                                                                                     | `Integer`                       | Maximum number of concurrent tasks                          |
+| `publish_message` | `message`<br> `priority: 1`                                                         | `Message`                       | Publishes a pre-built Message                               |
+| `publish`         | `topic`<br> `timeout 60`<br> `**payload`                                            | `Message`                       | Publishes a message                                         |
+| `subscribe`       | `topic`<br> `callable: nil`<br> `&block`                                            | `self`                          | Subscribes to a topic. _(Provide either callable or block)_ |
+| `subscriptions`   |                                                                                     | `Hash[String, Array[callable]]` | Registered Topics and their subscribers                     |
+| `topics`          |                                                                                     | `Array[String]`                 | Registered topic names                                      |
+| `unsubscribe_all` | `topic`                                                                             | `self`                          | Removes all subscribers from a topic                        |
+| `unsubscribe`     | `topic`<br> `callable:`                                                             | `self`                          | Unsubscribes from a topic                                   |
+| `with_topic`      | `topic`<br> `&block`                                                                | `void`                          | Executes block with a topic and unsubscribes all when done  |
+
+</details>
+
+<details>
+<summary>Station</summary>
+<br>
+| Method            | Arguments                                                                                                              | Return    | Description                                                |
+|-------------------|------------------------------------------------------------------------------------------------------------------------|-----------|------------------------------------------------------------|
+| `initialize`      | `bus: Bus.new`<br> `interval: 0.01`<br> `limit: 10_000`<br> `threads: Etc.nprocessors`<br> `timeout: 60`<br> `wait: 5` | `void`    | Creates a new Station instance                             |
+| `bus`             |                                                                                                                        | `Bus`     | Bus instance                                               |
+| `interval`        |                                                                                                                        | `Float`   | Polling interval in seconds                                |
+| `limit`           |                                                                                                                        | `Integer` | Max number of pending messages                             |
+| `pending`         |                                                                                                                        | `Integer` | Number of unprocessed messages                             |
+| `publish_message` | `message`<br> `priority: 1`                                                                                            | `Message` | Publishes a pre-built Message                              |
+| `publish`         | `topic`<br> `priority: 1`<br> `timeout: self.timeout`<br> `**payload`                                                  | `Message` | Publishes a message                                        |
+| `running?`        |                                                                                                                        | `bool`    | Indicates if the station is running                        |
+| `start`           | `interval: self.interval`<br> `threads: self.threads`                                                                  | `void`    | Starts the station                                         |
+| `stop`            | `timeout: nil`                                                                                                         | `void`    | Stops the station                                          |
+| `subscribe`       | `topic`<br> `callable: nil`<br> `&block`                                                                               | `self`    | Subscribes to a topic _(Provide either callable or block)_ |
+| `threads`         |                                                                                                                        | `Integer` | Number of processing threads                               |
+| `timeout`         |                                                                                                                        | `Float`   | Timeout for individual message processing                  |
+| `unsubscribe_all` | `topic`                                                                                                                | `self`    | Removes all subscribers from a topic                       |
+| `unsubscribe`     | `topic`<br> `callable:`                                                                                                | `self`    | Unsubscribes from a topic                                  |
+
+</details>
+
+<details>
+<summary>Message</summary>
+<br>
+| Method        | Arguments                            | Return                  | Description                                              |
+| ------------- | -------------------------------------| ----------------------- | ---------------------------------------------------------|
+| `initialize`  | `topic`, `timeout: nil`, `**payload` | `Message`               | Creates a new Message instance                           |
+| `created_at`  |                                      | `Time`                  | Time message was created                                 |
+| `id`          |                                      | `String`                | Unique message identifier                                |
+| `metadata`    |                                      | `Hash[Symbol, untyped]` | Metadata _(thread info, etc.)_                           |
+| `payload`     |                                      | `Hash`                  | Message payload                                          |
+| `subscribers` |                                      | `Array[Subscriber]`     | Message subscribers _(waits for processing to complete)_ |
+| `thread_id`   |                                      | `Integer`               | Thread that created the message                          |
+| `timeout`     |                                      | `Float`                 | Timeout for processing in seconds _(all subscribers)_    |
+| `to_h`        |                                      | `Hash[Symbol, untyped]` | Hash representation of the message                       |
+| `topic`       |                                      | `String`                | Message topic                                            |
+| `wait`        | `interval: 0.1`                      | `void`                  | Blocks and waits for processing to complete              |
+
+</details>
+
+<details>
+<summary>Subscriber</summary>
+<br>
+| Method            | Arguments             | Return                    | Description                            |
+| ----------------- | --------------------- | ------------------------- | ---------------------------------------|
+| `initialize`      | `callable`, `message` | `Subscriber`              | Creates a new Subscriber instance      |
+| `callable`        |                       | `#call`                   | Callable object _(Proc, lambda, etc.)_ |
+| `error`           |                       | `Error?`                  | Error, if subscriber failed            |
+| `errored?`        |                       | `bool`                    | Indicates if the subscriber errored    |
+| `id`              |                       | `Integer`                 | Unique subscriber identifier           |
+| `message`         |                       | `Message`                 | Message being handled                  |
+| `metadata`        |                       | `Hash[Symbol, untyped]`   | Metadata _(thread info, etc.)_         |
+| `pending?`        |                       | `bool`                    | Indicates if unperformed               |
+| `perform`         |                       | `void`                    | Executes the callable                  |
+| `performed?`      |                       | `bool`                    | Indicates if performed                 |
+| `source_location` |                       | `Array[String, Integer]?` | File and line number of callable       |
+| `timeout`         | `cause`               | `void`                    | Marks subscriber as timed out          |
+| `to_h`            |                       | `Hash[Symbol, untyped]`   | Hash representation of the subscriber  |
+| `value`           |                       | `untyped`                 | Value returned by the callable         |
+
+</details>
 
 ## See Also
 
 - [Message Bus](https://github.com/discourse/message_bus) - A reliable and robust messaging bus for Ruby and Rack
 - [Wisper](https://github.com/krisleech/wisper) - A micro library providing Ruby objects with Publish-Subscribe capabilities
-
-## Sponsors
-
-<p align="center">
-  <em>Proudly sponsored by</em>
-</p>
-<p align="center">
-  <a href="https://www.clickfunnels.com?utm_source=hopsoft&utm_medium=open-source&utm_campaign=local_bus">
-    <img src="https://images.clickfunnel.com/uploads/digital_asset/file/176632/clickfunnels-dark-logo.svg" width="575" />
-  </a>
-</p>

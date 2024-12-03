@@ -33,23 +33,24 @@ class LocalBus
         {received: message.payload}
       end
 
-      result = station.publish("example", station: true)
-      result.wait
-      subscribers = result.value
+      message = station.publish("example", station: true)
+      message.wait
+      subscribers = message.subscribers
 
-      assert_kind_of Concurrent::Promises::Future, result
       assert subscribers.all? { _1 in LocalBus::Subscriber }
+      assert_pattern { subscribers => [{value: {received: {station: true}}}] }
     end
 
     def test_publish_with_callable_object
       station = Station.new
-      station.bus.max_concurrency.times do |num|
+      station.bus.concurrency.times do |num|
         station.subscribe @topic, callable: TestCallable.new
       end
 
-      subscribers = station.publish(@topic, number: rand(10)).value
+      message = station.publish(@topic, number: rand(10))
+      subscribers = message.subscribers
 
-      assert_equal station.bus.max_concurrency, subscribers.size
+      assert_equal station.bus.concurrency, subscribers.size
       assert subscribers.all? { _1 in Subscriber }
       assert subscribers.map(&:value).all? { _1[:number] in Integer }
     end
@@ -89,44 +90,20 @@ class LocalBus
       end
 
       # The publish operation completes with partial success
-      result = station.publish("user.created", user_id: 123)
-      subscribers = result.value
-      errored_subscribers = result.value.select(&:error)
-      successful_subscribers = result.value.reject(&:error)
+      message = station.publish("user.created", user_id: 123)
+      subscribers = message.subscribers
+      errored_subscribers = subscribers.select(&:errored?)
+      successful_subscribers = subscribers.reject(&:errored?)
 
       assert_equal 2, subscribers.size
       assert_equal 1, errored_subscribers.size
       assert_equal 1, successful_subscribers.size
     end
 
-    def test_publish_and_chain_futures_with_then
-      station = Station.new
-
-      station.subscribe(@topic) do |message|
-        sleep 0.1 # simulated latency
-        :test
-      end
-
-      # chain futures with #then
-      # @note #then blocks can return any value, but #publish always returns Subscriber
-      future = station.publish(@topic, success: true).then do |results|
-        sleep 0.1 # simulated latency
-        results << {thread_id: Thread.current.object_id}
-      end
-
-      values = future.value # block and wait for the futures to complete
-      result = values[0] # this is a Subscriber
-      value = values[1] # this is the value returned by the #then block
-
-      refute_equal Thread.current.object_id, result.metadata[:thread_id]
-      refute_equal Thread.current.object_id, value[:thread_id]
-    end
-
     def test_publish_with_multiple_subscribers
       received_messages = []
       station = Station.new
 
-      # @note This loop takes 10 seconds to complete without non-blocking IO
       start = Time.now
       100.times do
         station.subscribe(@topic) do |message|
@@ -145,7 +122,7 @@ class LocalBus
     def test_publish_with_timeout
       latency = 0.25
       concurrency = 2
-      bus = Bus.new(max_concurrency: concurrency)
+      bus = Bus.new(concurrency: concurrency)
       station = Station.new(bus: bus)
 
       (concurrency * 2).times do |i|
@@ -155,13 +132,68 @@ class LocalBus
         end
       end
 
-      future = station.publish(@topic, timeout: latency) # Concurrent::Promises::Future
-      subscribers = future.value # SubscriberList
+      message = station.publish(@topic, timeout: latency)
+      subscribers = message.subscribers
 
       assert_pattern { subscribers.first => {error: nil, metadata: {**}} }
       assert_pattern { subscribers.last => {error: LocalBus::Subscriber::Error, metadata: {**}} }
       assert subscribers.last.error.message.start_with? "Timeout expired before invocation!"
       assert subscribers.last.error.cause.is_a? Async::TimeoutError
+    end
+
+    def test_publish_with_priority
+      station = Station.new(threads: 1)
+      station.stop # stop the queue so we can add messages now and process later
+
+      index = 0
+      station.subscribe("default") { index += 1 }
+      station.subscribe("important") { index += 1 }
+      station.subscribe("critical") { index += 1 }
+
+      # note the order of publications
+      default = station.publish("default")
+      important = station.publish("important", priority: 5)
+      critical = station.publish("critical", priority: 10)
+
+      station.start
+      default.wait # only need to wait for the lowest priority as higher priority messages will process first
+
+      default_subscriber = default.subscribers.first
+      important_subscriber = important.subscribers.first
+      critical_subscriber = critical.subscribers.first
+
+      assert_equal 1, critical_subscriber.value
+      assert critical_subscriber.metadata[:finished_at] < important_subscriber.metadata[:finished_at]
+
+      assert_equal 2, important_subscriber.value
+      assert important_subscriber.metadata[:finished_at] < default_subscriber.metadata[:finished_at]
+
+      assert_equal 3, default_subscriber.value
+    end
+
+    def test_stop_with_unprocessed_messages
+      station = Station.new
+      count = 30
+      latency = 0.1
+
+      count.times do |i|
+        station.bus.concurrency.times do
+          station.subscribe("topic-#{i}") { sleep latency }
+        end
+        station.publish("topic-#{i}")
+      end
+
+      sleep latency * 2 # allow time for some messages to process but not all
+      station.stop
+
+      # should have some unprocessed messages
+      refute station.empty?
+      assert station.count < count
+
+      # resume processing
+      station.start
+      sleep latency * 10 # allow time for remaining messages to process
+      assert station.empty?
     end
   end
 end

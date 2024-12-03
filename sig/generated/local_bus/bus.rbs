@@ -1,23 +1,29 @@
 # Generated from lib/local_bus/bus.rb with RBS::Inline
 
 class LocalBus
-  # Local in-process single threaded "message bus" with non-blocking I/O
+  # The Bus acts as a direct transport mechanism for messages, akin to placing a passenger directly onto a bus.
+  # When a message is published to the Bus, it is immediately delivered to all subscribers, ensuring prompt execution of tasks.
+  # This is achieved through non-blocking I/O operations, which allow the Bus to handle multiple tasks efficiently without blocking the main thread.
+  #
+  # @note While the Bus uses asynchronous operations to optimize performance,
+  #       the actual processing of a message may still experience slight delays due to I/O wait times from prior messages.
+  #       This means that while the Bus aims for immediate processing, the nature of asynchronous operations can introduce some latency.
   class Bus
     include MonitorMixin
 
     # Constructor
-    # @note Creates a new Bus instance with specified concurrency
-    # @rbs concurrency: Integer -- maximum number of concurrent tasks (default: Concurrent.processor_count)
+    # @note Creates a new Bus instance with specified max concurrency (i.e. number of tasks that can run in parallel)
+    # @rbs concurrency: Integer -- maximum number of concurrent tasks (default: Etc.nprocessors)
     def initialize: (?concurrency: Integer) -> untyped
 
     # Maximum number of concurrent tasks that can run in "parallel"
-    # @rbs return: Integer -- current concurrency value
+    # @rbs return: Integer
     def concurrency: () -> Integer
 
-    # Sets the concurrency
-    # @rbs concurrency: Integer -- max number of concurrent tasks that can run in "parallel"
+    # Sets the max concurrency
+    # @rbs value: Integer -- max number of concurrent tasks that can run in "parallel"
     # @rbs return: Integer -- new concurrency value
-    def concurrency=: (untyped value) -> Integer
+    def concurrency=: (Integer value) -> Integer
 
     # Registered topics that have subscribers
     # @rbs return: Array[String] -- list of topic names
@@ -51,7 +57,7 @@ class LocalBus
     # @rbs block: (String) -> void -- block to execute (yields the topic)
     def with_topic: (String topic) ?{ (?) -> untyped } -> untyped
 
-    # Publishes a message to a topic
+    # Publishes a message
     #
     # @note If subscribers are rapidly created/destroyed mid-publish, there's a theoretical
     #       possibility of object_id reuse. However, this is extremely unlikely in practice.
@@ -61,12 +67,17 @@ class LocalBus
     #
     # @note If the timeout is exceeded, the task will be cancelled before all subscribers have completed.
     #
-    # Check the Subscriber for any errors.
+    # Check individual Subscribers for possible errors.
     #
     # @rbs topic: String -- topic name
-    # @rbs timeout: Float -- seconds to wait before cancelling (default: 300)
+    # @rbs timeout: Float -- seconds to wait for subscribers to process the message before cancelling (default: 60)
     # @rbs payload: Hash -- message payload
-    # @rbs return: Array[Subscriber] -- list of performed subscribers (empty if no subscribers)
-    def publish: (String topic, ?timeout: Float, **untyped payload) -> Array[Subscriber]
+    # @rbs return: Message
+    def publish: (String topic, ?timeout: Float, **untyped payload) -> Message
+
+    # Publishes a pre-built message
+    # @rbs message: Message -- message to publish
+    # @rbs return: Message
+    def publish_message: (Message message) -> Message
   end
 end

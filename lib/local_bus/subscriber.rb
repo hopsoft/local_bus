@@ -5,6 +5,8 @@
 class LocalBus
   # Wraps a Callable (Proc) and Message intended for asynchronous execution.
   class Subscriber
+    include MonitorMixin
+
     # Custom error class for Subscriber errors
     class Error < StandardError
       # Constructor
@@ -24,6 +26,7 @@ class LocalBus
     # @rbs callable: #call -- the subscriber's callable object
     # @rbs message: Message -- the message to be processed
     def initialize(callable, message)
+      super()
       @callable = callable
       @message = message
       @id = callable.object_id
@@ -68,21 +71,29 @@ class LocalBus
       metadata.any?
     end
 
-    # Checks if the subscriber is pending
+    # Indicates if the subscriber is pending or unperformed
     # @rbs return: bool
     def pending?
       metadata.empty?
     end
 
+    # Indicates if the subscriber has errored
+    # @rbs return: bool
+    def errored?
+      !!error
+    end
+
     # Performs the subscriber's callable
     # @rbs return: void
     def perform
-      return if performed?
+      synchronize do
+        return if performed?
 
-      with_metadata do
-        @value = callable.call(message)
-      rescue => cause
-        @error = Error.new("Invocation failed! #{cause.message}", cause: cause)
+        with_metadata do
+          @value = callable.call(message)
+        rescue => cause
+          @error = Error.new("Invocation failed! #{cause.message}", cause: cause)
+        end
       end
     end
 
@@ -129,7 +140,7 @@ class LocalBus
         finished_at: Time.now,
         duration: Time.now - started_at,
         latency: Time.now - message.created_at,
-        message: message
+        message: message.to_h
       }.freeze
     end
   end

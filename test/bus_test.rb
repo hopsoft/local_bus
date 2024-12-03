@@ -50,7 +50,7 @@ class LocalBus
     def test_publish
       bus = Bus.new
 
-      bus.max_concurrency.times do |num|
+      bus.concurrency.times do |num|
         bus.subscribe(@topic) do |_message|
           sleep @latency
           num
@@ -58,24 +58,25 @@ class LocalBus
       end
 
       start = Time.now
-      result = bus.publish(@topic)
-      result.wait
-      subscribers = result.value
+      message = bus.publish(@topic)
+      message.wait
+      subscribers = message.subscribers
 
-      assert result.value.all? { _1 in LocalBus::Subscriber }
-      assert_equal (0..bus.max_concurrency - 1).to_a, subscribers.map(&:value)
-      assert (@latency...(@latency * 1.25)).cover?(Time.now - start)
+      assert subscribers.all? { _1 in LocalBus::Subscriber }
+      assert_equal (0..bus.concurrency - 1).to_a, subscribers.map(&:value)
+      assert (@latency...(@latency * 2)).cover?(Time.now - start)
     end
 
     def test_publish_with_callable_object
       bus = Bus.new
-      bus.max_concurrency.times do |num|
+      bus.concurrency.times do |num|
         bus.subscribe @topic, callable: TestCallable.new
       end
 
-      subscribers = bus.publish(@topic, number: rand(10)).value
+      message = bus.publish(@topic, number: rand(10))
+      subscribers = message.subscribers
 
-      assert_equal bus.max_concurrency, subscribers.size
+      assert_equal bus.concurrency, subscribers.size
       assert subscribers.all? { _1 in Subscriber }
       assert subscribers.map(&:value).all? { _1[:number] in Integer }
     end
@@ -96,18 +97,18 @@ class LocalBus
     def test_subscriber_errors
       bus = Bus.new
 
-      bus.max_concurrency.times do |num|
+      bus.concurrency.times do |num|
         bus.subscribe @topic do |_message|
           raise "Intentional Error!"
         end
       end
 
-      promise = bus.publish(@topic, test: true)
-      promise.wait
-      subscribers = promise.value
+      message = bus.publish(@topic, test: true)
+      message.wait
+      subscribers = message.subscribers
 
-      assert_equal bus.max_concurrency, bus.subscriptions[@topic].size
-      assert_equal bus.max_concurrency, subscribers.size
+      assert_equal bus.concurrency, bus.subscriptions[@topic].size
+      assert_equal bus.concurrency, subscribers.size
       assert subscribers.all? { _1.error in Subscriber::Error }
       assert subscribers.all? { _1.error.message.start_with? "Invocation failed!" }
       assert subscribers.all? { _1.error.cause.message.start_with? "Intentional Error!" }
@@ -125,10 +126,10 @@ class LocalBus
       end
 
       # The publish operation completes with partial success
-      result = bus.publish("user.created", user_id: 123)
-      subscribers = result.value
-      errored_subscribers = result.value.select(&:error)
-      successful_subscribers = result.value.reject(&:error)
+      message = bus.publish("user.created", user_id: 123)
+      subscribers = message.subscribers
+      errored_subscribers = subscribers.select(&:errored?)
+      successful_subscribers = subscribers.reject(&:errored?)
 
       assert_equal 2, subscribers.size
       assert_equal 1, errored_subscribers.size
@@ -138,7 +139,7 @@ class LocalBus
     def test_timeout
       bus = Bus.new
 
-      count = bus.max_concurrency * 2
+      count = bus.concurrency * 2
       count.times do |index|
         bus.subscribe(@topic) do |_message|
           sleep @latency
@@ -147,7 +148,8 @@ class LocalBus
       end
       assert_equal count, bus.subscriptions[@topic].size
 
-      subscribers = bus.publish(@topic, timeout: @latency, test: true).value
+      message = bus.publish(@topic, timeout: @latency, test: true)
+      subscribers = message.subscribers
       assert_equal count, subscribers.size
 
       pending = subscribers.select(&:pending?)

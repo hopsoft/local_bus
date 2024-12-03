@@ -24,8 +24,9 @@ Gem::Specification.new do |s|
 
   s.required_ruby_version = ">= 3.0"
 
+  s.add_dependency "algorithms"
   s.add_dependency "async"
-  s.add_dependency "concurrent-ruby"
+  s.add_dependency "timers"
   s.add_dependency "zeitwerk"
 
   s.add_development_dependency "amazing_print"
@@ -38,6 +39,5 @@ Gem::Specification.new do |s|
   s.add_development_dependency "rake"
   s.add_development_dependency "rbs-inline"
   s.add_development_dependency "standard"
-  s.add_development_dependency "tocer"
   s.add_development_dependency "yard"
 end
