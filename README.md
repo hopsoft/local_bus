@@ -173,13 +173,13 @@ By default, LocalBus delegates to the Station for all pub/sub operations, making
 
 ## Installation
 
-### Requirements
-
-- Ruby `>= 3.0`
-
 ```bash
 bundle add local_bus
 ```
+
+### Requirements
+
+- Ruby `>= 3.0`
 
 ## Usage
 
