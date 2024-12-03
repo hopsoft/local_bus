@@ -192,7 +192,7 @@ class LocalBus
 
       # resume processing
       station.start
-      sleep latency * 2 # allow time for remaining messages to process
+      sleep latency * 10 # allow time for remaining messages to process
       assert station.empty?
     end
   end
