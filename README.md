@@ -11,7 +11,7 @@
 ### A lightweight single-process pub/sub system that enables clean, decoupled interactions.
 
 > [!TIP]
-> LocalBus is implemented in under 400 lines of code, making it easy to review and understand the implementation details and internals.
+> At under 400 lines of code. The LocalBus source can be reviewed quickly to grok its implementation and internals.
 
 ## Why LocalBus?
 
