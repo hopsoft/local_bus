@@ -28,33 +28,35 @@ Even within a single process, this pattern offers powerful benefits:
 
 ## Table of Contents
 
-- [Key Benefits](#key-benefits)
-  - [Performance and Efficiency](#performance-and-efficiency)
-  - [Ease of Use](#ease-of-use)
-  - [Decoupling and Modularity](#decoupling-and-modularity)
-  - [Reliability and Safety](#reliability-and-safety)
-- [Use Cases](#use-cases)
-- [Key Components](#key-components)
-  - [Bus](#bus)
-  - [Station](#station)
-  - [LocalBus](#localbus)
-- [Installation](#installation)
-- [Usage](#usage)
-  - [LocalBus](#localbus-1)
-  - [Bus](#bus-1)
-  - [Station](#station-1)
-- [Advanced Usage](#advanced-usage)
-  - [Concurrency Controls](#concurrency-controls)
-    - [Bus](#bus-2)
-    - [Station](#station-2)
-      - [Message Priority](#message-priority)
-  - [Error Handling](#error-handling)
-  - [Memory Considerations](#memory-considerations)
-  - [Blocking Operations](#blocking-operations)
-  - [Shutdown & Cleanup](#shutdown--cleanup)
-  - [Limitations](#limitations)
-- [Interfaces](#interfaces)
-- [See Also](#see-also)
+  - [Key Benefits](#key-benefits)
+    - [Performance and Efficiency](#performance-and-efficiency)
+    - [Ease of Use](#ease-of-use)
+    - [Decoupling and Modularity](#decoupling-and-modularity)
+    - [Reliability and Safety](#reliability-and-safety)
+  - [Use Cases](#use-cases)
+  - [Key Components](#key-components)
+    - [Bus](#bus)
+    - [Station](#station)
+    - [LocalBus](#localbus)
+  - [Installation](#installation)
+    - [Requirements](#requirements)
+  - [Usage](#usage)
+    - [LocalBus](#localbus-1)
+    - [Bus](#bus-1)
+    - [Station](#station-1)
+  - [Advanced Usage](#advanced-usage)
+    - [Concurrency Controls](#concurrency-controls)
+      - [Bus](#bus-2)
+      - [Station](#station-2)
+        - [Message Priority](#message-priority)
+    - [Error Handling](#error-handling)
+    - [Memory Considerations](#memory-considerations)
+    - [Blocking Operations](#blocking-operations)
+    - [Shutdown & Cleanup](#shutdown--cleanup)
+    - [Limitations](#limitations)
+    - [Demos & Benchmarks](#demos--benchmarks)
+  - [Interfaces](#interfaces)
+  - [See Also](#see-also)
 
 <!-- Tocer[finish]: Auto-generated, don't remove. -->
 
@@ -360,6 +362,22 @@ This delay can be configured via the `:wait` option in the constructor (default:
 - No built-in retry mechanism for failed subscribers _(subscribers expose an error property, but you'll need to check and handle such errors)_
 
 Consider these limitations when designing your system architecture.
+
+### Demos & Benchmarks
+
+The project includes demo scripts that showcase concurrent processing capabilities:
+
+```bash
+bin/demo-bus     # demonstrates Bus performance
+bin/demo-station # demonstrates Station performance
+```
+
+Both demos simulate I/O-bound operations _(1 second latency)_ to show how LocalBus handles concurrent processing. For example, on an 10-core system:
+
+- The Bus processes a message with 10 I/O-bound subscribers in ~1 second instead of 10 seconds
+- The Station processes 10 messages with 10 I/O-bound subscribers each in ~1 second instead of 100 seconds
+
+This demonstrates how LocalBus offers high throughput for I/O-bound operations. :raised_hands:
 
 ## Interfaces
 

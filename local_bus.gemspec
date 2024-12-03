@@ -20,7 +20,7 @@ Gem::Specification.new do |s|
   s.metadata["source_code_uri"] = s.homepage
   s.metadata["changelog_uri"] = s.homepage + "/blob/main/CHANGELOG.md"
 
-  s.files = Dir["{lib}/**/*", "MIT-LICENSE", "README.md"]
+  s.files = Dir["{lib,sig}/**/*", "MIT-LICENSE", "README.md"]
 
   s.required_ruby_version = ">= 3.0"
 
