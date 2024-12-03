@@ -352,7 +352,7 @@ The Station delays process exit in an attempt to flush the queue and avoid dropp
 This delay can be configured via the `:wait` option in the constructor (default: 5).
 
 > [!IMPORTANT]
-> This wait allows some time for processing pending messages at exit, but this is not guaranteed.
+> This wait time allows for processing pending messages at exit, but is not guaranteed.
 > Factor for potential message loss when designing your system.
 > For example, idempotency _i.e. messages that can be re-published without unintended side effects_.
 
