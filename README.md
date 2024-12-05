@@ -205,6 +205,13 @@ message.subscribers # blocks and waits until all subscribers complete and return
 
 message.subscribers.first.value
 #=> "It worked!"
+
+# subscribe with any object that responds to `#call`.
+worker = ->(message) do
+  # business logic (e.g. API calls, database queries, disk operations, etc.)
+  "It worked!"
+end
+LocalBus.subscribe "user.created", callable: worker
 ```
 
 ### Bus
@@ -215,6 +222,7 @@ bus = LocalBus::Bus.new # ... or LocalBus.instance.bus
 # register a subscriber
 bus.subscribe "user.created" do |message|
   # business logic (e.g. API calls, database queries, disk operations, etc.)
+  "It worked!"
 end
 
 message = bus.publish("user.created", user_id: 123)
@@ -222,12 +230,8 @@ message.wait        # blocks until all subscribers complete
 message.subscribers # waits and returns the subscribers
 #=> [#<LocalBus::Subscriber:0x000000012bbb79a8 ...>]
 
-# subscribe with any object that responds to `#call`.
-worker = ->(message) do
-  # business logic (e.g. API calls, database queries, disk operations, etc.)
-  "It worked!"
-end
-bus.subscribe "user.created", callable: worker
+message.subscribers.first.value
+#=> "It worked!"
 ```
 
 ### Station
@@ -247,13 +251,6 @@ message.subscribers # blocks and waits until all subscribers complete and return
 
 message.subscribers.first.value
 #=> "It worked!"
-
-# subscribe with any object that responds to `#call`.
-worker = ->(message) do
-  # business logic (e.g. API calls, database queries, disk operations, etc.)
-  "It worked!"
-end
-station.subscribe "user.created", callable: worker
 ```
 
 ## Advanced Usage
