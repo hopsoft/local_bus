@@ -9,19 +9,40 @@ require_relative "../lib/local_bus"
 AmazingPrint.pry!
 
 bus = LocalBus.instance.bus
-subscriber_count = bus.concurrency
+subscribe_count = 10
+publish_count = 10
 
-subscriber_count.times do |num|
-  bus.subscribe "bus-demo" do |message|
-    sleep 1 # sleep 1 second per subscriber
+# setup multiple subscribers per/message
+publish_count.times do |i|
+  subscribe_count.times do
+    bus.subscribe "demo-#{i}" do |message|
+      sleep 1 # sleep 1 second per subscriber
+    end
   end
 end
 
 start = Time.now
-puts "Publishing 1 message with #{subscriber_count} subscribers."
-message = bus.publish("bus-demo", demo: :bus)
 
-# NOTE: The Bus blocks until all subscribers complete even if we don't explicitly wait
+# Wrap in an Async task since we're publishing multiple messages to the Bus.
+# This prevents blocking as the Bus implicitly waits for each published message to complete.
+# Note that this is not necessary when publishing via the Station.
+task = Async do
+  publish_count.times.map do |i|
+    bus.publish("demo-#{i}")
+  end
+end
+messages = task.result
+
 duration = Time.now - start
-subscribers = message.subscribers
-ap subscribers: subscribers.map(&:to_h), processed: subscribers.size, duration: duration
+subscribers = messages.map(&:subscribers).flatten
+
+puts
+
+ap(
+  subscribers: subscribers.map(&:to_h),
+  total_messages: messages.size,
+  total_subscribers: subscribers.size,
+  duration: duration
+)
+
+puts "Published #{messages.size} messages with #{bus.concurrency} subscribers each."

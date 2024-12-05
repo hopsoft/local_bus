@@ -10,28 +10,37 @@ AmazingPrint.pry!
 
 station = LocalBus.instance.station
 bus = station.bus
-subscriber_count = bus.concurrency
-publish_count = station.threads
+subscribe_count = 10
+publish_count = 10
 
-subscriber_count.times do |num|
-  station.subscribe "station-demo" do |message|
-    sleep 1 # sleep 1 second per subscriber
+# setup multiple subscribers per/message
+publish_count.times do |i|
+  subscribe_count.times do
+    bus.subscribe "demo-#{i}" do |message|
+      sleep 1 # sleep 1 second per subscriber
+    end
   end
 end
 
-station.start
 start = Time.now
-puts "Calling Station#publish with #{subscriber_count} subscribers that all sleep for 1 second each."
-messages = publish_count.times.map do
-  station.publish "station-demo"
+messages = publish_count.times.map do |i|
+  station.publish "demo-#{i}"
 end
-puts "Published #{messages.size} messages with #{subscriber_count} subscribers each."
-puts "Got here fast because the Station runs on a separate thread. Now we wait..."
+messages.flatten!
 
-# NOTE: The Station will block until all subscribers complete if we wait or access subscribers.
-#       Also, the process will attempt a safe shutdown (allowing some time for subscribers to complete)
-#       even if we don't explicitly wait for or collect the value.
+puts "Got here fast because the Station runs on a thread pool. Now we wait..."
 messages.each(&:wait)
+
 duration = Time.now - start
 subscribers = messages.map(&:subscribers).flatten
-ap subscribers: subscribers.map(&:to_h), processed: subscribers.size, duration: duration
+
+puts
+
+ap(
+  subscribers: subscribers.map(&:to_h),
+  total_messages: messages.size,
+  total_subscribers: subscribers.size,
+  duration: duration
+)
+
+puts "Published #{messages.size} messages with #{bus.concurrency} subscribers each."
