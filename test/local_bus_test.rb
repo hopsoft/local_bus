@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "test_helper"
+require "test_helper"
 
 class LocalBusTest < Minitest::Test
   def test_singleton_instances
