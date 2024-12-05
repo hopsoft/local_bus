@@ -32,34 +32,34 @@ Even within a single process, this pattern offers powerful benefits:
 
 ## Table of Contents
 
-  - [Key Benefits](#key-benefits)
-    - [Performance and Efficiency](#performance-and-efficiency)
-    - [Ease of Use](#ease-of-use)
-    - [Decoupling and Modularity](#decoupling-and-modularity)
-    - [Reliability and Safety](#reliability-and-safety)
-  - [Use Cases](#use-cases)
-  - [Key Components](#key-components)
-    - [Bus](#bus)
-    - [Station](#station)
-    - [LocalBus](#localbus)
-  - [Installation](#installation)
-    - [Requirements](#requirements)
-  - [Usage](#usage)
-    - [LocalBus](#localbus-1)
-    - [Bus](#bus-1)
-    - [Station](#station-1)
-  - [Advanced Usage](#advanced-usage)
-    - [Concurrency Controls](#concurrency-controls)
-      - [Bus](#bus-2)
-      - [Station](#station-2)
-        - [Message Priority](#message-priority)
-    - [Error Handling](#error-handling)
-    - [Memory Considerations](#memory-considerations)
-    - [Blocking Operations](#blocking-operations)
-    - [Shutdown & Cleanup](#shutdown--cleanup)
-    - [Limitations](#limitations)
-    - [Demos & Benchmarks](#demos--benchmarks)
-  - [See Also](#see-also)
+- [Key Benefits](#key-benefits)
+  - [Performance and Efficiency](#performance-and-efficiency)
+  - [Ease of Use](#ease-of-use)
+  - [Decoupling and Modularity](#decoupling-and-modularity)
+  - [Reliability and Safety](#reliability-and-safety)
+- [Use Cases](#use-cases)
+- [Key Components](#key-components)
+  - [Bus](#bus)
+  - [Station](#station)
+  - [LocalBus](#localbus)
+- [Installation](#installation)
+  - [Requirements](#requirements)
+- [Usage](#usage)
+  - [LocalBus](#localbus-1)
+  - [Bus](#bus-1)
+  - [Station](#station-1)
+- [Advanced Usage](#advanced-usage)
+  - [Concurrency Controls](#concurrency-controls)
+    - [Bus](#bus-2)
+    - [Station](#station-2)
+      - [Message Priority](#message-priority)
+  - [Error Handling](#error-handling)
+  - [Memory Considerations](#memory-considerations)
+  - [Blocking Operations](#blocking-operations)
+  - [Shutdown & Cleanup](#shutdown--cleanup)
+  - [Limitations](#limitations)
+  - [Demos & Benchmarks](#demos--benchmarks)
+- [See Also](#see-also)
 
 <!-- Tocer[finish]: Auto-generated, don't remove. -->
 
@@ -378,9 +378,10 @@ bin/demo-station # demonstrates Station performance
 ```
 
 Both demos simulate I/O-bound operations _(1 second latency per subscriber)_ to show how LocalBus handles concurrent processing.
-For example, on an 10-core system:
 
-LocalBus can process 10 messages with 10 I/O-bound subscribers each in **~1 second instead of 100 seconds**
+For example,
+LocalBus can process 10 messages with 10 I/O-bound subscribers each in **~1 second instead of 100 seconds**,
+on a 10-core system.
 
 ## See Also
 
