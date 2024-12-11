@@ -1,4 +1,4 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-exec "bundle exec rbs-inline --output lib #{ARGV.join(" ")}".strip
+exec "bundle exec rbs-inline --opt-out --output --verbose lib #{ARGV.join(" ")}".strip

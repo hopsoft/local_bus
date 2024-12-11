@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-# rbs_inline: enabled
-
 class LocalBus
   # Represents a message in the LocalBus system
   class Message

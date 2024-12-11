@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-# rbs_inline: enabled
-
 class LocalBus
   # The Bus acts as a direct transport mechanism for messages, akin to placing a passenger directly onto a bus.
   # When a message is published to the Bus, it is immediately delivered to all subscribers, ensuring prompt execution of tasks.

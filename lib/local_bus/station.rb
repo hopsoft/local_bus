@@ -1,9 +1,5 @@
 # frozen_string_literal: true
 
-# rbs_inline: enabled
-# rubocop:disable Lint/MissingCopEnableDirective
-# rubocop:disable Style/ArgumentsForwarding
-
 class LocalBus
   # The Station serves as a queuing system for messages, similar to a bus station where passengers wait for their bus.
   #
@@ -28,16 +24,17 @@ class LocalBus
     #       Will not delay process exit when the queue is empty.
     #
     # @rbs bus: Bus -- local message bus (default: Bus.new)
-    # @rbs interval: Float -- queue polling interval in seconds (default: 0.01)
+    # @rbs interval: Float -- queue polling interval in seconds (default: 0.1)
     # @rbs limit: Integer -- max queue size (default: 10_000)
     # @rbs threads: Integer -- number of threads to use (default: Etc.nprocessors)
     # @rbs timeout: Float -- seconds to wait for subscribers to process the message before cancelling (default: 60)
     # @rbs wait: Float -- seconds to wait for the queue to flush at process exit (default: 5)
     # @rbs return: void
-    def initialize(bus: Bus.new, interval: 0.01, limit: 10_000, threads: Etc.nprocessors, timeout: 60, wait: 5)
+    def initialize(bus: Bus.new, interval: 0.1, limit: 10_000, threads: Etc.nprocessors, timeout: 60, wait: 5)
       super()
       @bus = bus
-      @interval = [interval.to_f, 0.01].max
+      @interval = interval.to_f
+      @interval = 0.1 unless @interval.positive?
       @limit = limit.to_i.positive? ? limit.to_i : 10_000
       @threads = [threads.to_i, 1].max
       @timeout = timeout.to_f
@@ -67,11 +64,11 @@ class LocalBus
     attr_reader :timeout
 
     # Starts the station
-    # @rbs interval: Float -- queue polling interval in seconds (default: 0.01)
+    # @rbs interval: Float -- queue polling interval in seconds (default: self.interval)
     # @rbs threads: Integer -- number of threads to use (default: self.threads)
     # @rbs return: void
     def start(interval: self.interval, threads: self.threads)
-      interval = [interval.to_f, 0.01].max
+      interval = 0.1 unless interval.positive?
       threads = [threads.to_i, 1].max
 
       synchronize do

@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-# rbs_inline: enabled
-
 class LocalBus
   # Wraps an Async::Barrier and a list of Subscribers that are processing a Message.
   class Publication
