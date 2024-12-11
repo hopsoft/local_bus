@@ -25,7 +25,7 @@ class LocalBus
     #       Will not delay process exit when the queue is empty.
     #
     # @rbs bus: Bus -- local message bus (default: Bus.new)
-    # @rbs interval: Float -- queue polling interval in seconds (default: 0.01)
+    # @rbs interval: Float -- queue polling interval in seconds (default: 0.1)
     # @rbs limit: Integer -- max queue size (default: 10_000)
     # @rbs threads: Integer -- number of threads to use (default: Etc.nprocessors)
     # @rbs timeout: Float -- seconds to wait for subscribers to process the message before cancelling (default: 60)
@@ -54,7 +54,7 @@ class LocalBus
     attr_reader timeout: untyped
 
     # Starts the station
-    # @rbs interval: Float -- queue polling interval in seconds (default: 0.01)
+    # @rbs interval: Float -- queue polling interval in seconds (default: self.interval)
     # @rbs threads: Integer -- number of threads to use (default: self.threads)
     # @rbs return: void
     def start: (?interval: Float, ?threads: Integer) -> void

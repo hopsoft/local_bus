@@ -1,0 +1,5 @@
+ignore:
+  - "**/*":
+    - Layout/LeadingCommentSpace
+    - Lint/MissingCopEnableDirective
+    - Style/ArgumentsForwarding

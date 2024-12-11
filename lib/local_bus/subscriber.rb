@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-# rbs_inline: enabled
-
 class LocalBus
   # Wraps a Callable (Proc) and Message intended for asynchronous execution.
   class Subscriber
