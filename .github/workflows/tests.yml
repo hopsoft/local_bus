@@ -11,10 +11,10 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       TERM: xterm-256color
-      BM: "true"
+      BM: 'true'
     strategy:
       matrix:
-        ruby-version: ["3.3"]
+        ruby-version: ['3.3', '3.4']
 
     steps:
       - uses: actions/checkout@v3
