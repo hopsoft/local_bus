@@ -31,6 +31,7 @@ Gem::Specification.new do |s|
 
   s.add_development_dependency "amazing_print"
   s.add_development_dependency "fiddle"
+  s.add_development_dependency "irb"
   s.add_development_dependency "minitest"
   s.add_development_dependency "minitest-reporters"
   s.add_development_dependency "ostruct"
@@ -38,6 +39,7 @@ Gem::Specification.new do |s|
   s.add_development_dependency "pry-doc"
   s.add_development_dependency "rake"
   s.add_development_dependency "rbs-inline"
+  s.add_development_dependency "reline"
   s.add_development_dependency "standard"
   s.add_development_dependency "yard"
 end
